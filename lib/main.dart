@@ -1,31 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class HomeController extends GetxController {
-  RxString msg = 'welcome'.obs;
-  RxString timeStamp = 'time'.obs;
-
-  void setStamp() {
-    timeStamp.value = DateTime.now().toString();
-  }
-
-  void setMessage(text) {
-    msg.value = text;
-  }
-
-  @override
-  void onInit() {
-    super.onInit();
-    setStamp();
-  }
-}
-
-class AppBindings implements Bindings {
-  @override
-  void dependencies() {
-    Get.put(HomeController());
-  }
-}
+import 'app_controller.dart';
 
 void main() => runApp(const MainApp());
 
@@ -54,6 +30,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    final versioningController = Get.find<VersioningController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -73,13 +50,23 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                Text(controller.msg.value),
-                Text(controller.timeStamp.value),
+                Obx(() => Text(controller.msg.value)),
+                Obx(() => Text(controller.timeStamp.value)),
                 const SizedBox(height: 20),
+                Obx(() => Text(versioningController.folderContents.toString())),
               ],
             ),
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () {
+          controller.setStamp();
+          // versioningController.loadTarget('S:\\');
+          versioningController.loadTarget(versioningController.userSettings['targetAddress']);
+          versioningController.writeSettings(versioningController.userSettings['settingsAddress']);
+        },
       ),
     );
   }
