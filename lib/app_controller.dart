@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'app_model.dart';
+
 class HomeController extends GetxController {
   RxString msg = 'welcome'.obs;
   RxString timeStamp = 'time'.obs;
@@ -23,23 +25,30 @@ class HomeController extends GetxController {
 }
 
 class VersioningController extends GetxController {
-  RxList<String> folderContents = <String>[].obs;
+  RxList<FileObject> folderContents = <FileObject>[].obs;
   Map<String, dynamic> userSettings = {};
 
+  
+
+  RxString userSelection = ''.obs;
+
   final Map<String, dynamic> defaultSettings = {
-    'settingsAddress': 'S:\\',
-    'targetAddress': 'S:\\',
+    'settingsAddress': '',
+    'targetAddress': '',
   };
+
+  VersioningController() {
+    defaultSettings['settingsAddress'] = _localAppDataAddress();
+    defaultSettings['targetAddress'] = Directory.current.path;
+  }
 
   @override
   void onReady() async {
     super.onReady();
-
-    const initialPath = 'S:\\'; // fallback location to load/create settings.json
-    await validateSettings(initialPath);
+    await validateSettings(defaultSettings['settingsAddress']);
   }
 
-  void _showErrorDialog(String title, String content) {
+  void _showDialog(String title, String content) {
     Get.dialog(
       AlertDialog(
         title: Text(title),
@@ -55,12 +64,19 @@ class VersioningController extends GetxController {
     return '${folderPath.endsWith(Platform.pathSeparator) ? folderPath : '$folderPath${Platform.pathSeparator}'}settings.json';
   }
 
+  String _localAppDataAddress() {
+    String appDataPath = Platform.environment['localappdata'] ?? '';
+    String appFolder = 'saveApp';
+    return '$appDataPath${Platform.pathSeparator}$appFolder';
+  }
+
   // ensures that settings.json exists and is valid
   Future<void> validateSettings(String basePath) async {
     final file = File(_settingsAddress(basePath));
 
     try {
       if (!await file.exists()) {
+        // file does not exist, create it with default settings
         userSettings = Map.from(defaultSettings);
         await writeSettings(basePath);
         return;
@@ -69,23 +85,23 @@ class VersioningController extends GetxController {
       final contents = await file.readAsString();
 
       if (contents.trim().isEmpty) {
+        // file is empty, write default settings
         userSettings = Map.from(defaultSettings);
         await writeSettings(basePath);
         return;
       }
 
+      // attempt to parse the JSON
       final parsed = jsonDecode(contents);
 
       if (parsed is Map<String, dynamic>) {
-        // Merge loaded settings with defaults (loaded keys overwrite defaults)
-        userSettings = {...defaultSettings, ...parsed};
-
-        // Write back merged settings to ensure all keys saved
-        await writeSettings(basePath);
+        // load settings directly from the file without merging
+        userSettings = parsed;
       } else {
         throw const FormatException('corrupt settings file');
       }
     } catch (_) {
+      // on error, revert to default settings
       userSettings = Map.from(defaultSettings);
       await writeSettings(basePath);
     }
@@ -109,7 +125,7 @@ class VersioningController extends GetxController {
 
       await tempFile.rename(filePath);
     } catch (e) {
-      _showErrorDialog('Write Error', 'failed to write settings: $e');
+      _showDialog('Write Error', 'failed to write settings: $e');
     }
   }
 
@@ -137,41 +153,63 @@ class VersioningController extends GetxController {
   Future<void> loadTarget(String path) async {
     try {
       final dir = Directory(
-        path.endsWith('/') ? path.substring(0, path.length - 1) : path,
+        path.endsWith(Platform.pathSeparator)
+            ? path
+            : '$path${Platform.pathSeparator}',
       );
+
       if (!await dir.exists()) {
         throw Exception('directory does not exist: $path');
       }
 
       final entries = dir.list();
-      List<String> tempContents = [];
+      List<FileObject> tempContents = [];
 
       await for (var entry in entries) {
-        final name =
-            entry.path
-                .split(Platform.pathSeparator)
-                .where((e) => e.isNotEmpty)
-                .last;
+        final stat = await entry.stat();
+        final name = entry.path.split(Platform.pathSeparator).last;
+        final created = stat.changed;
+        final modified = stat.modified;
+
         if (entry is File) {
-          tempContents.add(name);
+          tempContents.add(
+            FileItem(
+              name: name,
+              path: entry.path,
+              created: created,
+              modified: modified,
+              size: stat.size,
+              extension: name.contains('.') ? name.split('.').last : '',
+            ),
+          );
         } else if (entry is Directory) {
-          tempContents.add('/$name');
+          final itemCount = await entry.list().length;
+          tempContents.add(
+            FolderItem(
+              name: name,
+              path: entry.path,
+              created: created,
+              modified: modified,
+              itemCount: itemCount,
+            ),
+          );
         }
       }
 
+      // folders first, then alphabetical
       tempContents.sort((a, b) {
-        bool aIsDir = a.startsWith('/');
-        bool bIsDir = b.startsWith('/');
+        final aIsDir = a is FolderItem;
+        final bIsDir = b is FolderItem;
         return aIsDir != bIsDir
             ? (aIsDir ? -1 : 1)
-            : a.toLowerCase().compareTo(b.toLowerCase());
+            : a.name.toLowerCase().compareTo(b.name.toLowerCase());
       });
 
       folderContents
         ..clear()
         ..addAll(tempContents);
     } catch (e) {
-      _showErrorDialog('Error', 'failed to read target: $e');
+      _showDialog('Error', 'failed to read target: $e');
     }
   }
 

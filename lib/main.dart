@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'app_controller.dart';
+import 'app_model.dart';
 
 void main() => runApp(const MainApp());
 
@@ -53,7 +54,56 @@ class HomeScreen extends StatelessWidget {
                 Obx(() => Text(controller.msg.value)),
                 Obx(() => Text(controller.timeStamp.value)),
                 const SizedBox(height: 20),
-                Obx(() => Text(versioningController.folderContents.toString())),
+                // Obx(() => Text(versioningController.folderContents.toString())),
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Obx(() {
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: versioningController.folderContents.length,
+                      itemBuilder: (context, index) {
+                        final item = versioningController.folderContents[index];
+
+                        if (item is FolderItem) {
+                          return ListTile(
+                            title: Text('/${item.name}'),
+                            subtitle: Text('${item.itemCount} items'),
+                            trailing: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('Created: ${item.created}'),
+                                Text('Modified: ${item.modified}'),
+                              ],
+                            ),
+                            onTap: () {
+                              versioningController.userSelection.value = item.path;
+                              Get.snackbar('folder selected', item.name);
+                            },
+                          );
+                        } else if (item is FileItem) {
+                          return ListTile(
+                            title: Text(item.name),
+                            subtitle: Text('${item.size} bytes'),
+                            trailing: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('Created: ${item.created}'),
+                                Text('Modified: ${item.modified}'),
+                              ],
+                            ),
+                            onTap: () {
+                              versioningController.userSelection.value = item.path;
+                              Get.snackbar('file Selected', item.name);
+                            },
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    );
+                  }),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -63,9 +113,7 @@ class HomeScreen extends StatelessWidget {
         child: const Icon(Icons.add),
         onPressed: () {
           controller.setStamp();
-          // versioningController.loadTarget('S:\\');
           versioningController.loadTarget(versioningController.userSettings['targetAddress']);
-          versioningController.writeSettings(versioningController.userSettings['settingsAddress']);
         },
       ),
     );
