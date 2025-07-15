@@ -24,6 +24,12 @@ class HomeController extends GetxController {
   }
 }
 
+class ViewController extends GetxController {
+
+  
+
+}
+
 class VersioningController extends GetxController {
   RxList<FileObject> folderContents = <FileObject>[].obs;
   Map<String, dynamic> userSettings = {};
@@ -31,6 +37,10 @@ class VersioningController extends GetxController {
   
 
   RxString userSelection = ''.obs;
+
+
+  String currentPath = '';
+  List<String> pathHistory = [];
 
   final Map<String, dynamic> defaultSettings = {
     'settingsAddress': '',
@@ -40,6 +50,7 @@ class VersioningController extends GetxController {
   VersioningController() {
     defaultSettings['settingsAddress'] = _localAppDataAddress();
     defaultSettings['targetAddress'] = Directory.current.path;
+    currentPath = defaultSettings['targetAddress'];
   }
 
   @override
@@ -150,7 +161,13 @@ class VersioningController extends GetxController {
     return userSettings.containsKey(key) ? userSettings[key] : fallback;
   }
 
-  Future<void> loadTarget(String path) async {
+  Future<void> loadTarget(String path, {bool pushToHistory = true}) async {
+    if (pushToHistory) {
+      pathHistory.add(currentPath);
+    }
+
+    currentPath = path;
+
     try {
       final dir = Directory(
         path.endsWith(Platform.pathSeparator)
@@ -166,37 +183,62 @@ class VersioningController extends GetxController {
       List<FileObject> tempContents = [];
 
       await for (var entry in entries) {
-        final stat = await entry.stat();
-        final name = entry.path.split(Platform.pathSeparator).last;
-        final created = stat.changed;
-        final modified = stat.modified;
+        try {
+          final stat = await entry.stat();
+          final name = entry.path.split(Platform.pathSeparator).last;
+          final created = stat.changed;
+          final modified = stat.modified;
 
-        if (entry is File) {
-          tempContents.add(
-            FileItem(
-              name: name,
-              path: entry.path,
-              created: created,
-              modified: modified,
-              size: stat.size,
-              extension: name.contains('.') ? name.split('.').last : '',
-            ),
-          );
-        } else if (entry is Directory) {
-          final itemCount = await entry.list().length;
-          tempContents.add(
-            FolderItem(
-              name: name,
-              path: entry.path,
-              created: created,
-              modified: modified,
-              itemCount: itemCount,
-            ),
-          );
+          if (entry is File) {
+            tempContents.add(
+              FileItem(
+                name: name,
+                path: entry.path,
+                created: created,
+                modified: modified,
+                size: stat.size,
+                extension: name.contains('.') ? name.split('.').last : '',
+              ),
+            );
+          } else if (entry is Directory) {
+            int itemCount = 0;
+            try {
+              itemCount = await entry.list().length;
+            } catch (_) {
+              // Skip inaccessible folder count
+            }
+
+            tempContents.add(
+              FolderItem(
+                name: name,
+                path: entry.path,
+                created: created,
+                modified: modified,
+                itemCount: itemCount,
+              ),
+            );
+          }
+        } catch (_) {
+          // Skip this entry if it can't be accessed
         }
       }
 
-      // folders first, then alphabetical
+      // Add parent ("..") entry if not at root
+      if (!_isRoot(path)) {
+        final parentDir = Directory(path).parent.path;
+        tempContents.insert(
+          0,
+          FolderItem(
+            name: '..',
+            path: parentDir,
+            created: DateTime.now(),
+            modified: DateTime.now(),
+            itemCount: 0,
+          ),
+        );
+      }
+
+      // Sort folders first, then alphabetically
       tempContents.sort((a, b) {
         final aIsDir = a is FolderItem;
         final bIsDir = b is FolderItem;
@@ -213,12 +255,28 @@ class VersioningController extends GetxController {
     }
   }
 
+  void goBack() {
+    if (_isRoot(currentPath)) {
+      _showDialog('Warning', 'You are already at the root directory.');
+      return;
+    }
+
+    final parent = Directory(currentPath).parent.path;
+    loadTarget(parent, pushToHistory: false);
+  }
+
+  bool _isRoot(String path) {
+    final dir = Directory(path);
+    return dir.parent.path == path;
+  }
+
 }
 
 class AppBindings implements Bindings {
   @override
   void dependencies() {
     Get.put(HomeController());
+    Get.put(ViewController());
     Get.put(VersioningController());
   }
 }

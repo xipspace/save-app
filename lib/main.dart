@@ -77,8 +77,13 @@ class HomeScreen extends StatelessWidget {
                               ],
                             ),
                             onTap: () {
-                              versioningController.userSelection.value = item.path;
-                              Get.snackbar('folder selected', item.name);
+                              if (item.name == '..') {
+                                versioningController.goBack();
+                              } else {
+                                versioningController.userSelection.value =
+                                    item.path;
+                                versioningController.loadTarget(item.path);
+                              }
                             },
                           );
                         } else if (item is FileItem) {
@@ -94,7 +99,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                             onTap: () {
                               versioningController.userSelection.value = item.path;
-                              Get.snackbar('file Selected', item.name);
+                              Get.snackbar('File selected', item.name);
                             },
                           );
                         }
@@ -111,9 +116,12 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () {
+        onPressed: () async {
           controller.setStamp();
-          versioningController.loadTarget(versioningController.userSettings['targetAddress']);
+          // versioningController.loadTarget(versioningController.userSettings['targetAddress']);
+          final currentFolder = versioningController.currentPath;
+          await versioningController.updateSetting(versioningController.userSettings['settingsAddress'], 'targetAddress', currentFolder);
+
         },
       ),
     );
