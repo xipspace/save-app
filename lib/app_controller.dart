@@ -25,19 +25,28 @@ class HomeController extends GetxController {
 }
 
 class ViewController extends GetxController {
-
   
+  void showDialog(String title, String content) {
+    Get.dialog(
+      AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
 
 }
 
 class VersioningController extends GetxController {
+  final ViewController viewController = Get.find<ViewController>();
+  
   RxList<FileObject> folderContents = <FileObject>[].obs;
   Map<String, dynamic> userSettings = {};
 
-  
-
   RxString userSelection = ''.obs;
-
 
   String currentPath = '';
   List<String> pathHistory = [];
@@ -56,20 +65,19 @@ class VersioningController extends GetxController {
   @override
   void onReady() async {
     super.onReady();
-    await validateSettings(defaultSettings['settingsAddress']);
+
+    final settingsPath = defaultSettings['settingsAddress'];
+    await validateSettings(settingsPath);
+
+    final targetPath =
+        userSettings['targetAddress'] as String? ??
+        defaultSettings['targetAddress'];
+
+    currentPath = targetPath;
+    await loadTarget(targetPath, pushToHistory: false);
   }
 
-  void _showDialog(String title, String content) {
-    Get.dialog(
-      AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('OK')),
-        ],
-      ),
-    );
-  }
+
 
   String _settingsAddress(String folderPath) {
     return '${folderPath.endsWith(Platform.pathSeparator) ? folderPath : '$folderPath${Platform.pathSeparator}'}settings.json';
@@ -136,7 +144,7 @@ class VersioningController extends GetxController {
 
       await tempFile.rename(filePath);
     } catch (e) {
-      _showDialog('Write Error', 'failed to write settings: $e');
+      viewController.showDialog('Write Error', 'failed to write settings: $e');
     }
   }
 
@@ -251,13 +259,13 @@ class VersioningController extends GetxController {
         ..clear()
         ..addAll(tempContents);
     } catch (e) {
-      _showDialog('Error', 'failed to read target: $e');
+      viewController.showDialog('Error', 'failed to read target: $e');
     }
   }
 
   void goBack() {
     if (_isRoot(currentPath)) {
-      _showDialog('Warning', 'You are already at the root directory.');
+      viewController.showDialog('Warning', 'You are already at the root directory.');
       return;
     }
 

@@ -17,6 +17,11 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        textTheme: const TextTheme(
+          titleSmall: TextStyle(fontSize: 16),
+          bodySmall: TextStyle(fontSize: 14),
+          labelSmall: TextStyle(fontSize: 12),
+        ),
       ),
       initialRoute: '/',
       initialBinding: AppBindings(),
@@ -31,6 +36,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    final viewController = Get.find<ViewController>();
     final versioningController = Get.find<VersioningController>();
 
     return Scaffold(
@@ -67,6 +73,7 @@ class HomeScreen extends StatelessWidget {
 
                         if (item is FolderItem) {
                           return ListTile(
+                            dense: true,
                             title: Text('/${item.name}'),
                             subtitle: Text('${item.itemCount} items'),
                             trailing: Column(
@@ -80,14 +87,14 @@ class HomeScreen extends StatelessWidget {
                               if (item.name == '..') {
                                 versioningController.goBack();
                               } else {
-                                versioningController.userSelection.value =
-                                    item.path;
+                                versioningController.userSelection.value = item.path;
                                 versioningController.loadTarget(item.path);
                               }
                             },
                           );
                         } else if (item is FileItem) {
                           return ListTile(
+                            dense: true,
                             title: Text(item.name),
                             subtitle: Text('${item.size} bytes'),
                             trailing: Column(
@@ -121,7 +128,10 @@ class HomeScreen extends StatelessWidget {
           // versioningController.loadTarget(versioningController.userSettings['targetAddress']);
           final currentFolder = versioningController.currentPath;
           await versioningController.updateSetting(versioningController.userSettings['settingsAddress'], 'targetAddress', currentFolder);
-
+          viewController.showDialog(
+            'Target',
+            'Current target: $currentFolder',
+          );
         },
       ),
     );
