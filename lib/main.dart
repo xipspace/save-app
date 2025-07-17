@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'app_controller.dart';
 import 'app_model.dart';
 
+enum ActionType { save, compress }
+
 void main() => runApp(const MainApp());
 
 class MainApp extends StatelessWidget {
@@ -38,6 +40,22 @@ class HomeScreen extends StatelessWidget {
     final controller = Get.find<HomeController>();
     final viewController = Get.find<ViewController>();
     final versioningController = Get.find<VersioningController>();
+    final archiveController = Get.find<ArchiveController>();
+
+    final Map<ActionType, VoidCallback> actionMap = {
+      ActionType.save: () async {
+        final currentFolder = versioningController.currentPath;
+        await versioningController.updateSetting(
+          versioningController.userSettings['settingsAddress'],
+          'targetAddress',
+          currentFolder,
+        );
+        viewController.showDialog('Target', 'Current target: $currentFolder');
+      },
+      ActionType.compress: () async {
+        await archiveController.compressTargetDirectory();
+      },
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -60,9 +78,41 @@ class HomeScreen extends StatelessWidget {
                 Obx(() => Text(controller.msg.value)),
                 Obx(() => Text(controller.timeStamp.value)),
                 const SizedBox(height: 20),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children:
+                      ActionType.values.map((action) {
+                        final label = action.name.capitalizeFirst ?? action.name;
+
+                        return SizedBox(
+                          width: 150,
+                          child: Card(
+                            elevation: 2,
+                            child: InkWell(
+                              onTap: actionMap[action],
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 20,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    label,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 20),
                 // Obx(() => Text(versioningController.folderContents.toString())),
                 Card(
                   margin: const EdgeInsets.symmetric(horizontal: 10),
+                  elevation: 2,
                   child: Obx(() {
                     return ListView.builder(
                       shrinkWrap: true,

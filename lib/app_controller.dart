@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import 'package:archive/archive.dart';
 
 import 'app_model.dart';
 
@@ -280,11 +283,90 @@ class VersioningController extends GetxController {
 
 }
 
+class ArchiveController extends GetxController {
+  final ViewController viewController = Get.find<ViewController>();
+  final VersioningController versioningController = Get.find<VersioningController>();
+
+  String _generateTimestamp() {
+    final now = DateTime.now().toString();
+    return now.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  String _sanitizeFileName(String name) {
+    return name.toLowerCase().replaceAll(' ', '_');
+  }
+
+  Future<void> compressTargetDirectory() async {
+    final targetPath = versioningController.userSettings['targetAddress'];
+    final dir = Directory(targetPath);
+
+    if (!await dir.exists()) {
+      viewController.showDialog('Error', 'Directory not found: $targetPath');
+      return;
+    }
+
+    final sanitizedName = _sanitizeFileName(
+      dir.path.split(Platform.pathSeparator).last,
+    );
+    final timestamp = _generateTimestamp();
+    final zipName = '${sanitizedName}_$timestamp.zip';
+    final zipPath = '${dir.path}${Platform.pathSeparator}$zipName';
+
+    final archive = Archive();
+    int fileCount = 0;
+    int folderCount = 0;
+    int totalBytes = 0;
+
+    try {
+      await for (final entity in dir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        final relativePath = entity.path.replaceFirst(
+          '${dir.path}${Platform.pathSeparator}',
+          '',
+        );
+
+        // Skip the output zip itself if it's inside the same folder
+        if (entity.path == zipPath) continue;
+
+        if (entity is File) {
+          final bytes = await entity.readAsBytes();
+          archive.addFile(ArchiveFile(relativePath, bytes.length, bytes));
+          fileCount++;
+          totalBytes += bytes.length;
+        } else if (entity is Directory) {
+          archive.addFile(
+            ArchiveFile('$relativePath/', 0, []),
+          ); // Add folder entry
+          folderCount++;
+        }
+      }
+
+      // Encode the archive
+      final zipData = ZipEncoder().encode(archive);
+      final outFile = File(zipPath);
+      await outFile.writeAsBytes(zipData);
+
+      viewController.showDialog(
+        'Compression Complete',
+        'Created: $zipName\n'
+            'Files: $fileCount\n'
+            'Folders: $folderCount\n'
+            'Total Size: ${totalBytes ~/ 1024} KB',
+      );
+    } catch (e) {
+      viewController.showDialog('Error', 'Failed to compress: $e');
+    }
+  }
+}
+
 class AppBindings implements Bindings {
   @override
   void dependencies() {
     Get.put(HomeController());
     Get.put(ViewController());
     Get.put(VersioningController());
+    Get.put(ArchiveController());
   }
 }
