@@ -37,23 +37,18 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
-    final viewController = Get.find<ViewController>();
-    final versioningController = Get.find<VersioningController>();
-    final archiveController = Get.find<ArchiveController>();
+    final home = Get.find<HomeController>();
+    final view = Get.find<ViewController>();
+    final stream = Get.find<StreamController>();
 
     final Map<ActionType, VoidCallback> actionMap = {
       ActionType.save: () async {
-        final currentFolder = versioningController.currentPath;
-        await versioningController.updateSetting(
-          versioningController.userSettings['settingsAddress'],
-          'targetAddress',
-          currentFolder,
-        );
-        viewController.showDialog('Target', 'Current target: $currentFolder');
+        final currentFolder = view.viewLocation;
+        await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
+        home.showDialog('Target', 'Selected items: ${home.userSettings['target']}');
       },
       ActionType.compress: () async {
-        await archiveController.compressTargetDirectory();
+        // await archive.compressTarget();
       },
     };
 
@@ -75,96 +70,89 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                Obx(() => Text(controller.msg.value)),
-                Obx(() => Text(controller.timeStamp.value)),
+                Obx(() => Text(home.msg.value)),
+                Obx(() => Text(home.timeStamp.value)),
+                const SizedBox(height: 20),
+                Obx(() => Text(home.userSettings.toString())),
                 const SizedBox(height: 20),
                 Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children:
-                      ActionType.values.map((action) {
-                        final label = action.name.capitalizeFirst ?? action.name;
-
-                        return SizedBox(
-                          width: 150,
-                          child: Card(
-                            elevation: 2,
-                            child: InkWell(
-                              onTap: actionMap[action],
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 20,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    label,
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ),
-                              ),
+                  // spacing: 5,
+                  // runSpacing: 5,
+                  children: ActionType.values.map((action) {
+                    final label = action.name.capitalizeFirst ?? action.name;
+                    return SizedBox(
+                      width: 150,
+                      child: Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
+                          child: InkWell(
+                            onTap: actionMap[action],
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              child: Center(child: Text(label)),
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 20),
-                // Obx(() => Text(versioningController.folderContents.toString())),
+
+
+
                 Card(
                   margin: const EdgeInsets.symmetric(horizontal: 10),
                   elevation: 2,
                   child: Obx(() {
+                    final items = view.viewContents;
+                    if (items.isEmpty) {
+                      return const Padding(padding: EdgeInsets.all(20), child: Text('This folder is empty.'));
+                    }
+
                     return ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: versioningController.folderContents.length,
+                      itemCount: items.length,
                       itemBuilder: (context, index) {
-                        final item = versioningController.folderContents[index];
+                        final item = items[index];
+                        final displayName = item is FolderItem ? '${item.name}/' : item.name;
 
-                        if (item is FolderItem) {
-                          return ListTile(
+                        return Obx(
+                          () => ListTile(
+                            title: Text(displayName),
                             dense: true,
-                            title: Text('/${item.name}'),
-                            subtitle: Text('${item.itemCount} items'),
-                            trailing: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text('Created: ${item.created}'),
-                                Text('Modified: ${item.modified}'),
-                              ],
+                            // visualDensity: VisualDensity.compact,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                            trailing: Checkbox(
+                              value: item.isSelected.value,
+                              onChanged: (val) => item.isSelected.value = val ?? false,
                             ),
                             onTap: () {
-                              if (item.name == '..') {
-                                versioningController.goBack();
+                              if (item is FolderItem) {
+                                view.viewLocation = item.path;
+                                view.readLocation();
                               } else {
-                                versioningController.userSelection.value = item.path;
-                                versioningController.loadTarget(item.path);
+                                // home.setMsg('Tapped file: ${item.name}');
                               }
                             },
-                          );
-                        } else if (item is FileItem) {
-                          return ListTile(
-                            dense: true,
-                            title: Text(item.name),
-                            subtitle: Text('${item.size} bytes'),
-                            trailing: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text('Created: ${item.created}'),
-                                Text('Modified: ${item.modified}'),
-                              ],
-                            ),
-                            onTap: () {
-                              versioningController.userSelection.value = item.path;
-                              Get.snackbar('File selected', item.name);
-                            },
-                          );
-                        }
-                        return const SizedBox.shrink();
+                          ),
+                        );
                       },
                     );
                   }),
                 ),
+
+                
+                
                 const SizedBox(height: 20),
               ],
             ),
@@ -173,16 +161,7 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () async {
-          controller.setStamp();
-          // versioningController.loadTarget(versioningController.userSettings['targetAddress']);
-          final currentFolder = versioningController.currentPath;
-          await versioningController.updateSetting(versioningController.userSettings['settingsAddress'], 'targetAddress', currentFolder);
-          viewController.showDialog(
-            'Target',
-            'Current target: $currentFolder',
-          );
-        },
+        onPressed: () => home.setStamp(),
       ),
     );
   }

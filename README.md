@@ -1,7 +1,6 @@
-# Save Point
+# save_point_app
 
-Toolbox for versioning game progress.
+A Toolbox for versioning game progress.
 
 Copyright (c) 2025 @xipspace
-<br>
 All rights reserved.

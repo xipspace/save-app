@@ -1,8 +1,11 @@
+import 'package:get/get.dart';
+
 abstract class FileObject {
   final String name;
   final String path;
   final DateTime created;
   final DateTime modified;
+  final RxBool isSelected = false.obs;
 
   FileObject({
     required this.name,

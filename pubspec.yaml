@@ -1,21 +1,21 @@
 name: save_point_app
-description: 'A toolbox for versioning game progress.'
+description: "A Toolbox for versioning game progress."
 publish_to: 'none'
-version: 0.1.0
+version: 0.2.0
 
 environment:
-  sdk: ^3.7.2
+  sdk: ^3.8.1
 
 dependencies:
+  archive: ^4.0.7
   flutter:
     sdk: flutter
   get: ^4.7.2
-  archive: ^4.0.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
