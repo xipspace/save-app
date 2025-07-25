@@ -45,6 +45,7 @@ class HomeScreen extends StatelessWidget {
       ActionType.save: () async {
         final currentFolder = view.viewLocation;
         await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
+        await view.saveSelectedItems();
         home.showDialog('Target', 'Selected items: ${home.userSettings['target']}');
       },
       ActionType.compress: () async {
@@ -72,8 +73,8 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Obx(() => Text(home.msg.value)),
                 Obx(() => Text(home.timeStamp.value)),
-                const SizedBox(height: 20),
-                Obx(() => Text(home.userSettings.toString())),
+                // const SizedBox(height: 20),
+                // Obx(() => Text(home.userSettings.toString())),
                 const SizedBox(height: 20),
                 Wrap(
                   // spacing: 5,
@@ -115,7 +116,7 @@ class HomeScreen extends StatelessWidget {
                   child: Obx(() {
                     final items = view.viewContents;
                     if (items.isEmpty) {
-                      return const Padding(padding: EdgeInsets.all(20), child: Text('This folder is empty.'));
+                      return const Padding(padding: EdgeInsets.all(10), child: Text('This folder is empty.'));
                     }
 
                     return ListView.builder(
@@ -128,20 +129,23 @@ class HomeScreen extends StatelessWidget {
 
                         return Obx(
                           () => ListTile(
-                            title: Text(displayName),
                             dense: true,
-                            // visualDensity: VisualDensity.compact,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                            trailing: Checkbox(
-                              value: item.isSelected.value,
-                              onChanged: (val) => item.isSelected.value = val ?? false,
-                            ),
+                            title: Text(displayName, style: TextStyle(fontSize: 14)),
+                            // subtitle: Text('${item.created.toString()} / ${item.modified.toString()}'),
+                            subtitle: item.name != '..'
+                                ? Text('created: ${item.created.toString()}\nmodified: ${item.modified.toString()}')
+                                : null,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            trailing: item.name != '..'
+                                ? Checkbox(
+                                    value: item.isSelected.value,
+                                    onChanged: (val) => item.isSelected.value = val ?? false,
+                                  )
+                                : null,
                             onTap: () {
                               if (item is FolderItem) {
                                 view.viewLocation = item.path;
                                 view.readLocation();
-                              } else {
-                                // home.setMsg('Tapped file: ${item.name}');
                               }
                             },
                           ),

@@ -151,15 +151,11 @@ class ViewController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-
-    // try to load from user settings if available
     final savedLocation = home.userSettings['home'];
     viewLocation = (savedLocation is String && savedLocation.isNotEmpty) ? savedLocation : defaultLocation;
-
     readLocation();
   }
 
-  // loads the content of viewLocation into viewContents
   Future<void> readLocation() async {
     final dir = Directory(
       viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}',
@@ -171,7 +167,6 @@ class ViewController extends GetxController {
     }
 
     final Map<String, FileObject> previousMap = {for (final item in viewContents) item.identitySignature: item};
-
     List<FileObject> tempContents = [];
 
     await for (final entry in dir.list()) {
@@ -209,7 +204,6 @@ class ViewController extends GetxController {
       } catch (_) {}
     }
 
-    // Always apply sorting before pushing to the UI
     tempContents.sort((a, b) {
       final aIsFolder = a is FolderItem ? 0 : 1;
       final bIsFolder = b is FolderItem ? 0 : 1;
@@ -217,25 +211,64 @@ class ViewController extends GetxController {
       return typeCompare != 0 ? typeCompare : a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
 
+    // Add ".." if not root
+    final parent = Directory(viewLocation).parent.path;
+    final isRoot = Directory(viewLocation).path == parent;
+
+    if (!isRoot) {
+      tempContents.insert(
+        0,
+        FolderItem(
+          name: '..',
+          path: parent,
+          created: DateTime.fromMillisecondsSinceEpoch(0),
+          modified: DateTime.fromMillisecondsSinceEpoch(0),
+          itemCount: 0,
+        )..isSelected.value = false,
+      );
+    }
+
     viewContents.value = tempContents;
   }
 
-  /// sorts viewContents alphabetically by name
   void sortNameAsc() {
     viewContents.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
-  // sorts viewContents with folders first, then files
   void sortFolderFirst() {
     viewContents.sort((a, b) {
       final aIsFolder = a is FolderItem ? 0 : 1;
       final bIsFolder = b is FolderItem ? 0 : 1;
       final typeCompare = aIsFolder.compareTo(bIsFolder);
-
       if (typeCompare != 0) return typeCompare;
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
   }
 
+  Future<void> saveSelectedItems() async {
+    final stream = Get.find<StreamController>();
+    final selected = viewContents
+        .where((item) => item.isSelected.value && item.name != '..')
+        .map(
+          (item) => {
+            'type': item is FolderItem ? 'folder' : 'file',
+            'name': item.name,
+            'path': item.path,
+            // 'created': item.created.toIso8601String(),
+            // 'modified': item.modified.toIso8601String(),
+            'created': item.created.toString(),
+            'modified': item.modified.toString(),
+          },
+        )
+        .toList();
+
+    home.userSettings['home'] = viewLocation;
+    home.userSettings['target'] = selected;
+
+    await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
+    await stream.updateSettings(stream.settingsFilePath, 'target', selected);
+
+    // home.showDialog('Target', 'Selected ${selected.length} item(s) saved.');
+  }
 }
 
