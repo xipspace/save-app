@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'app_controller.dart';
 import 'app_model.dart';
 
-enum ActionType { save, compress }
+enum ActionType { home, save, compress, extract }
 
 void main() => runApp(const MainApp());
 
@@ -40,16 +40,22 @@ class HomeScreen extends StatelessWidget {
     final home = Get.find<HomeController>();
     final view = Get.find<ViewController>();
     final stream = Get.find<StreamController>();
+    final archive = Get.find<ArchiveController>();
 
     final Map<ActionType, VoidCallback> actionMap = {
+      ActionType.home: () async {
+        // go to home
+      },
       ActionType.save: () async {
         final currentFolder = view.viewLocation;
         await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
         await view.saveSelectedItems();
-        home.showDialog('Target', 'Selected items: ${home.userSettings['target']}');
       },
       ActionType.compress: () async {
-        // await archive.compressTarget();
+        await archive.compressTarget();
+      },
+      ActionType.extract: () async {
+        await archive.extractTarget();
       },
     };
 
@@ -76,6 +82,9 @@ class HomeScreen extends StatelessWidget {
                 // const SizedBox(height: 20),
                 // Obx(() => Text(home.userSettings.toString())),
                 const SizedBox(height: 20),
+                
+                
+                
                 Wrap(
                   // spacing: 5,
                   // runSpacing: 5,
@@ -125,30 +134,29 @@ class HomeScreen extends StatelessWidget {
                       itemCount: items.length,
                       itemBuilder: (context, index) {
                         final item = items[index];
-                        final displayName = item is FolderItem ? '${item.name}/' : item.name;
+                        final displayName = item is FolderItem ? '/${item.name}' : item.name;
 
-                        return Obx(
-                          () => ListTile(
-                            dense: true,
-                            title: Text(displayName, style: TextStyle(fontSize: 14)),
-                            // subtitle: Text('${item.created.toString()} / ${item.modified.toString()}'),
-                            subtitle: item.name != '..'
-                                ? Text('created: ${item.created.toString()}\nmodified: ${item.modified.toString()}')
-                                : null,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            trailing: item.name != '..'
-                                ? Checkbox(
+                        return ListTile(
+                          dense: true,
+                          title: Text(displayName, style: TextStyle(fontSize: 14)),
+                          subtitle: item.name != '..'
+                              ? Text('created: ${item.created.toString()}\nmodified: ${item.modified.toString()}')
+                              : null,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          trailing: item.name != '..'
+                              ? Obx(
+                                  () => Checkbox(
                                     value: item.isSelected.value,
                                     onChanged: (val) => item.isSelected.value = val ?? false,
-                                  )
-                                : null,
-                            onTap: () {
-                              if (item is FolderItem) {
-                                view.viewLocation = item.path;
-                                view.readLocation();
-                              }
-                            },
-                          ),
+                                  ),
+                                )
+                              : null,
+                          onTap: () {
+                            if (item is FolderItem) {
+                              view.viewLocation = item.path;
+                              view.readLocation();
+                            }
+                          },
                         );
                       },
                     );

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:archive/archive.dart';
 
 import 'app_model.dart';
 
@@ -12,6 +13,7 @@ class AppBindings implements Bindings {
     Get.put(HomeController());
     Get.put(StreamController());
     Get.put(ViewController());
+    Get.put(ArchiveController());
   }
 }
 
@@ -54,6 +56,146 @@ class HomeController extends GetxController {
     );
   }
 }
+
+
+
+class ViewController extends GetxController {
+  final HomeController home = Get.find<HomeController>();
+
+  String viewLocation = '';
+  RxList<FileObject> viewContents = <FileObject>[].obs;
+  final String defaultLocation = Directory.current.path;
+
+  @override
+  void onReady() {
+    super.onReady();
+    final savedLocation = home.userSettings['home'];
+    viewLocation = (savedLocation is String && savedLocation.isNotEmpty) ? savedLocation : defaultLocation;
+    readLocation();
+  }
+
+  Future<void> readLocation() async {
+    final dir = Directory(
+      viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}',
+    );
+
+    if (!await dir.exists()) {
+      home.showDialog('Error', 'directory does not exist:\n$viewLocation');
+      return;
+    }
+
+    final Map<String, FileObject> previousMap = {for (final item in viewContents) item.identitySignature: item};
+    List<FileObject> tempContents = [];
+
+    await for (final entry in dir.list()) {
+      try {
+        final stat = await entry.stat();
+        final name = entry.path.split(Platform.pathSeparator).last;
+        final created = stat.changed;
+        final modified = stat.modified;
+        final identity = '${entry.path}|$created';
+
+        FileObject? oldItem = previousMap[identity];
+
+        if (entry is File) {
+          tempContents.add(
+            FileItem(
+              name: name,
+              path: entry.path,
+              created: created,
+              modified: modified,
+              size: stat.size,
+              extension: name.contains('.') ? name.split('.').last : '',
+            )..isSelected.value = oldItem?.isSelected.value ?? false,
+          );
+        } else if (entry is Directory) {
+          int itemCount = 0;
+          try {
+            itemCount = await entry.list().length;
+          } catch (_) {}
+
+          tempContents.add(
+            FolderItem(name: name, path: entry.path, created: created, modified: modified, itemCount: itemCount)
+              ..isSelected.value = oldItem?.isSelected.value ?? false,
+          );
+        }
+      } catch (_) {}
+    }
+
+    tempContents.sort((a, b) {
+      final aIsFolder = a is FolderItem ? 0 : 1;
+      final bIsFolder = b is FolderItem ? 0 : 1;
+      final typeCompare = aIsFolder.compareTo(bIsFolder);
+      return typeCompare != 0 ? typeCompare : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+
+    // add ".." if not root
+    final parent = Directory(viewLocation).parent.path;
+    final isRoot = Directory(viewLocation).path == parent;
+
+    if (!isRoot) {
+      tempContents.insert(
+        0,
+        FolderItem(
+          name: '..',
+          path: parent,
+          created: DateTime.fromMillisecondsSinceEpoch(0),
+          modified: DateTime.fromMillisecondsSinceEpoch(0),
+          itemCount: 0,
+        )..isSelected.value = false,
+      );
+    }
+
+    viewContents.value = tempContents;
+  }
+
+  void sortNameAsc() {
+    viewContents.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  void sortFolderFirst() {
+    viewContents.sort((a, b) {
+      final aIsFolder = a is FolderItem ? 0 : 1;
+      final bIsFolder = b is FolderItem ? 0 : 1;
+      final typeCompare = aIsFolder.compareTo(bIsFolder);
+      if (typeCompare != 0) return typeCompare;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+  }
+
+  Future<void> saveSelectedItems() async {
+    final stream = Get.find<StreamController>();
+
+    final selected = viewContents
+        .where((item) => item.isSelected.value && item.name != '..')
+        .map(
+          (item) => {
+            'type': item is FolderItem ? 'folder' : 'file',
+            'name': item.name,
+            'path': item.path,
+            'created': item.created.toString(),
+            'modified': item.modified.toString(),
+          },
+        )
+        .toList();
+
+    if (selected.isEmpty) {
+      home.showDialog('Target', 'select at least one file or folder');
+      return;
+    }
+
+    home.userSettings['home'] = viewLocation;
+    home.userSettings['target'] = selected;
+
+    await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
+    await stream.updateSettings(stream.settingsFilePath, 'target', selected);
+
+    home.showDialog('Target', 'Selected items: ${home.userSettings['target']}');
+  }
+
+}
+
+
 
 class StreamController extends GetxController {
   final HomeController home = Get.find<HomeController>();
@@ -141,134 +283,99 @@ class StreamController extends GetxController {
 
 
 
-class ViewController extends GetxController {
+class ArchiveController extends GetxController {
   final HomeController home = Get.find<HomeController>();
+  final ViewController view = Get.find<ViewController>();
 
-  String viewLocation = '';
-  RxList<FileObject> viewContents = <FileObject>[].obs;
-  final String defaultLocation = Directory.current.path;
+  // use saved target at usersettings
 
-  @override
-  void onReady() {
-    super.onReady();
-    final savedLocation = home.userSettings['home'];
-    viewLocation = (savedLocation is String && savedLocation.isNotEmpty) ? savedLocation : defaultLocation;
-    readLocation();
+  String generateTimestamp() {
+    final now = DateTime.now().toString();
+    return now.replaceAll(RegExp(r'[^0-9]'), '');
   }
 
-  Future<void> readLocation() async {
-    final dir = Directory(
-      viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}',
-    );
+  Future<void> compressTarget() async {
+    final List targets = home.userSettings['target'] ?? [];
+    final String homePath = home.userSettings['home'] ?? '';
 
-    if (!await dir.exists()) {
-      home.showDialog('Error', 'directory does not exist:\n$viewLocation');
+    if (targets.isEmpty || homePath.isEmpty) {
+      home.showDialog('Error', 'No valid target or home path.');
       return;
     }
 
-    final Map<String, FileObject> previousMap = {for (final item in viewContents) item.identitySignature: item};
-    List<FileObject> tempContents = [];
+    final archive = Archive();
+    int fileCount = 0;
+    int folderCount = 0;
+    int totalBytes = 0;
 
-    await for (final entry in dir.list()) {
-      try {
-        final stat = await entry.stat();
-        final name = entry.path.split(Platform.pathSeparator).last;
-        final created = stat.changed;
-        final modified = stat.modified;
-        final identity = '${entry.path}|$created';
+    try {
+      for (var item in targets) {
+        final type = item['type'];
+        // final name = item['name'];
+        final path = item['path'];
 
-        FileObject? oldItem = previousMap[identity];
+        final entity = FileSystemEntity.typeSync(path);
+        if (entity == FileSystemEntityType.notFound) continue;
 
-        if (entry is File) {
-          tempContents.add(
-            FileItem(
-              name: name,
-              path: entry.path,
-              created: created,
-              modified: modified,
-              size: stat.size,
-              extension: name.contains('.') ? name.split('.').last : '',
-            )..isSelected.value = oldItem?.isSelected.value ?? false,
-          );
-        } else if (entry is Directory) {
-          int itemCount = 0;
-          try {
-            itemCount = await entry.list().length;
-          } catch (_) {}
+        final basePath = Directory(homePath).path;
+        final relativePath = path.replaceFirst('$basePath${Platform.pathSeparator}', '');
 
-          tempContents.add(
-            FolderItem(name: name, path: entry.path, created: created, modified: modified, itemCount: itemCount)
-              ..isSelected.value = oldItem?.isSelected.value ?? false,
-          );
+        if (type == 'file' && File(path).existsSync()) {
+          final file = File(path);
+          final bytes = await file.readAsBytes();
+          archive.addFile(ArchiveFile(relativePath, bytes.length, bytes));
+          fileCount++;
+          totalBytes += bytes.length;
+        } else if (type == 'folder' && Directory(path).existsSync()) {
+          final dir = Directory(path);
+          archive.addFile(ArchiveFile('$relativePath/', 0, []));
+          folderCount++;
+
+          await for (final entity in dir.list(recursive: true)) {
+            final subRelativePath = entity.path.replaceFirst('$basePath${Platform.pathSeparator}', '');
+
+            if (entity is File) {
+              final bytes = await entity.readAsBytes();
+              archive.addFile(ArchiveFile(subRelativePath, bytes.length, bytes));
+              fileCount++;
+              totalBytes += bytes.length;
+            } else if (entity is Directory) {
+              archive.addFile(ArchiveFile('$subRelativePath/', 0, []));
+              folderCount++;
+            }
+          }
         }
-      } catch (_) {}
-    }
+      }
 
-    tempContents.sort((a, b) {
-      final aIsFolder = a is FolderItem ? 0 : 1;
-      final bIsFolder = b is FolderItem ? 0 : 1;
-      final typeCompare = aIsFolder.compareTo(bIsFolder);
-      return typeCompare != 0 ? typeCompare : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+      final timestamp = generateTimestamp();
+      final zipName = 'archive_$timestamp.zip';
+      final zipPath = '$homePath${Platform.pathSeparator}$zipName';
 
-    // Add ".." if not root
-    final parent = Directory(viewLocation).parent.path;
-    final isRoot = Directory(viewLocation).path == parent;
+      final zipBytes = ZipEncoder().encode(archive);
+      await File(zipPath).writeAsBytes(zipBytes);
 
-    if (!isRoot) {
-      tempContents.insert(
-        0,
-        FolderItem(
-          name: '..',
-          path: parent,
-          created: DateTime.fromMillisecondsSinceEpoch(0),
-          modified: DateTime.fromMillisecondsSinceEpoch(0),
-          itemCount: 0,
-        )..isSelected.value = false,
+      if (homePath == view.viewLocation) {
+        await view.readLocation();
+      }
+
+      home.showDialog(
+        'Compression Complete',
+        'Created: $zipName\n'
+            'Files: $fileCount\n'
+            'Folders: $folderCount\n'
+            'Total Size: ${totalBytes ~/ 1024} KB',
       );
+    } catch (e) {
+      home.showDialog('Error', 'Compression failed: $e');
     }
-
-    viewContents.value = tempContents;
   }
 
-  void sortNameAsc() {
-    viewContents.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-  }
-
-  void sortFolderFirst() {
-    viewContents.sort((a, b) {
-      final aIsFolder = a is FolderItem ? 0 : 1;
-      final bIsFolder = b is FolderItem ? 0 : 1;
-      final typeCompare = aIsFolder.compareTo(bIsFolder);
-      if (typeCompare != 0) return typeCompare;
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
-  }
-
-  Future<void> saveSelectedItems() async {
-    final stream = Get.find<StreamController>();
-    final selected = viewContents
-        .where((item) => item.isSelected.value && item.name != '..')
-        .map(
-          (item) => {
-            'type': item is FolderItem ? 'folder' : 'file',
-            'name': item.name,
-            'path': item.path,
-            // 'created': item.created.toIso8601String(),
-            // 'modified': item.modified.toIso8601String(),
-            'created': item.created.toString(),
-            'modified': item.modified.toString(),
-          },
-        )
-        .toList();
-
-    home.userSettings['home'] = viewLocation;
-    home.userSettings['target'] = selected;
-
-    await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
-    await stream.updateSettings(stream.settingsFilePath, 'target', selected);
-
-    // home.showDialog('Target', 'Selected ${selected.length} item(s) saved.');
+  Future<void> extractTarget() async {
+    
+    // 
+    
   }
 }
+
+
 
