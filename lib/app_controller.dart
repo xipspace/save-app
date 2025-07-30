@@ -25,6 +25,7 @@ class HomeController extends GetxController {
     'settings': '', // settings.json location
     'home': '', // init location
     'target': {}, // collection of objects to operate
+    'tree': {}, // user collection of targets
   }.obs;
 
   void setStamp() => timeStamp.value = DateTime.now().toString();
@@ -368,6 +369,7 @@ class ArchiveController extends GetxController {
     } catch (e) {
       home.showDialog('Error', 'Compression failed: $e');
     }
+
   }
 
   Future<void> extractTarget() async {

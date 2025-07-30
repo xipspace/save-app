@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.green,
         actions: [
           IconButton(icon: const Icon(Icons.dark_mode_outlined), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.person_outline), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.person_outline), onPressed: () => Get.to(() => const UserScreen())),
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
           const SizedBox(width: 10),
         ],
@@ -73,7 +73,7 @@ class HomeScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 1280),
+            constraints: const BoxConstraints(maxWidth: 1024),
             child: Column(
               children: [
                 const SizedBox(height: 20),
@@ -85,36 +85,42 @@ class HomeScreen extends StatelessWidget {
                 
                 
                 
-                Wrap(
-                  // spacing: 5,
-                  // runSpacing: 5,
-                  children: ActionType.values.map((action) {
-                    final label = action.name.capitalizeFirst ?? action.name;
-                    return SizedBox(
-                      width: 150,
-                      child: Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
+                Container(
+                  alignment: Alignment.center,
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: Wrap(
+                    // spacing: 5,
+                    // runSpacing: 5,
+                    children: ActionType.values.map((action) {
+                      final label = action.name.capitalizeFirst ?? action.name;
+                      return SizedBox(
+                        width: 150,
+                        child: Card(
+                          elevation: 2,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
-                          child: InkWell(
-                            onTap: actionMap[action],
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                              child: Center(child: Text(label)),
+                          child: Material(
+                            color: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
+                            child: InkWell(
+                              onTap: actionMap[action],
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                child: Center(child: Text(label)),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
+
+
                 const SizedBox(height: 20),
 
 
@@ -169,6 +175,43 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class UserScreen extends StatelessWidget {
+  const UserScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final HomeController home = Get.find<HomeController>();
+    final MediaQueryData mediaQueryData = MediaQuery.of(context);
+
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+
+            Obx(() => Text(home.timeStamp.value.toString())),
+
+            const SizedBox(height: 20),
+            const Text('device info'),
+            const SizedBox(height: 20),
+            Text('Screen Size: ${mediaQueryData.size.width} x ${mediaQueryData.size.height}'),
+            Text('Orientation: ${mediaQueryData.orientation}'),
+            Text('Device Pixel Ratio: ${mediaQueryData.devicePixelRatio}'),
+            Text('Device Theme: ${mediaQueryData.platformBrightness}'),
+
+            Text('GetX isDarkMode: ${Get.isDarkMode}'),
+            // width: Get.width * 0.95,
+            // height: Get.height * 0.95,
+
+            const SizedBox(height: 20),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
