@@ -25,8 +25,9 @@ class HomeController extends GetxController {
     'settings': '', // settings.json location
     'home': '', // init location
     'target': {}, // collection of objects to operate
-    'tree': {}, // user collection of targets
   }.obs;
+
+  RxMap<String, dynamic> userTree = <String, dynamic>{}.obs;
 
   void setStamp() => timeStamp.value = DateTime.now().toString();
 
@@ -34,6 +35,14 @@ class HomeController extends GetxController {
     if (msg.value != text) {
       msg.value = text;
     }
+  }
+
+  String generateTimestamp() {
+    final now = DateTime.now();
+    final date = '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final time = '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    final millis = now.millisecond.toString().padLeft(3, '0');
+    return '${date}_$time$millis';
   }
 
   @override
@@ -62,6 +71,7 @@ class HomeController extends GetxController {
 
 class ViewController extends GetxController {
   final HomeController home = Get.find<HomeController>();
+  final stream = Get.find<StreamController>();
 
   String viewLocation = '';
   RxList<FileObject> viewContents = <FileObject>[].obs;
@@ -165,8 +175,6 @@ class ViewController extends GetxController {
   }
 
   Future<void> saveSelectedItems() async {
-    final stream = Get.find<StreamController>();
-
     final selected = viewContents
         .where((item) => item.isSelected.value && item.name != '..')
         .map(
@@ -181,7 +189,7 @@ class ViewController extends GetxController {
         .toList();
 
     if (selected.isEmpty) {
-      home.showDialog('Target', 'select at least one file or folder');
+      home.showDialog('Target', 'Select at least one file or folder');
       return;
     }
 
@@ -191,8 +199,9 @@ class ViewController extends GetxController {
     await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
     await stream.updateSettings(stream.settingsFilePath, 'target', selected);
 
-    home.showDialog('Target', 'Selected items: ${home.userSettings['target']}');
+    home.showDialog('Target', 'Saved ${selected.length} items');
   }
+
 
 }
 
@@ -239,7 +248,8 @@ class StreamController extends GetxController {
       final parsed = jsonDecode(contents);
 
       if (parsed is Map<String, dynamic>) {
-        (home.userSettings).value = parsed;
+        home.userSettings.clear();
+        home.userSettings.addAll(parsed);
       } else {
         throw const FormatException('corrupt settings file');
       }
@@ -289,11 +299,6 @@ class ArchiveController extends GetxController {
   final ViewController view = Get.find<ViewController>();
 
   // use saved target at usersettings
-
-  String generateTimestamp() {
-    final now = DateTime.now().toString();
-    return now.replaceAll(RegExp(r'[^0-9]'), '');
-  }
 
   Future<void> compressTarget() async {
     final List targets = home.userSettings['target'] ?? [];
@@ -348,7 +353,7 @@ class ArchiveController extends GetxController {
         }
       }
 
-      final timestamp = generateTimestamp();
+      final timestamp = home.generateTimestamp();
       final zipName = 'archive_$timestamp.zip';
       final zipPath = '$homePath${Platform.pathSeparator}$zipName';
 

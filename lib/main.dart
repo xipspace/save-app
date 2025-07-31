@@ -45,6 +45,8 @@ class HomeScreen extends StatelessWidget {
     final Map<ActionType, VoidCallback> actionMap = {
       ActionType.home: () async {
         // go to home
+        home.showDialog('Home', home.userSettings['home'].toString());
+        // home.showDialog('Tree', home.userSettings['tree'].toString());
       },
       ActionType.save: () async {
         final currentFolder = view.viewLocation;
@@ -209,6 +211,10 @@ class UserScreen extends StatelessWidget {
             Text('GetX isDarkMode: ${Get.isDarkMode}'),
             // width: Get.width * 0.95,
             // height: Get.height * 0.95,
+
+            const SizedBox(height: 20),
+
+            Obx(() => Text(home.userTree.toString())),
 
             const SizedBox(height: 20),
           ],
