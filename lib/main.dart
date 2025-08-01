@@ -109,14 +109,10 @@ class HomeScreen extends StatelessWidget {
                         width: 100,
                         child: Card(
                           elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: Material(
                             color: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
                             child: InkWell(
                               onTap: actionMap[action],
@@ -140,43 +136,56 @@ class HomeScreen extends StatelessWidget {
                 Card(
                   margin: const EdgeInsets.symmetric(horizontal: 10),
                   elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Obx(() {
                     final items = view.viewContents;
                     if (items.isEmpty) {
                       return const Padding(padding: EdgeInsets.all(10), child: Text('This folder is empty.'));
                     }
 
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        final displayName = item is FolderItem ? '/${item.name}' : item.name;
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          final isDrive =
+                              item is FolderItem && RegExp(r'^[A-Z]:\\$', caseSensitive: false).hasMatch(item.name);
+                          final displayName = item is FolderItem && !item.name.contains(':')
+                              ? '/${item.name}'
+                              : item.name;
 
-                        return ListTile(
-                          dense: true,
-                          title: Text(displayName, style: TextStyle(fontSize: 14)),
-                          subtitle: item.name != '..'
-                              ? Text('created: ${item.created.toString()}\nmodified: ${item.modified.toString()}')
-                              : null,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          trailing: item.name != '..'
-                              ? Obx(
-                                  () => Checkbox(
-                                    value: item.isSelected.value,
-                                    onChanged: (val) => item.isSelected.value = val ?? false,
-                                  ),
-                                )
-                              : null,
-                          onTap: () {
-                            if (item is FolderItem) {
-                              view.viewLocation = item.path;
-                              view.readLocation();
-                            }
-                          },
-                        );
-                      },
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                if (item is FolderItem) {
+                                  view.viewLocation = item.path;
+                                  view.readLocation();
+                                }
+                              },
+                              child: ListTile(
+                                dense: true,
+                                title: Text(displayName, style: const TextStyle(fontSize: 14)),
+                                subtitle: (!isDrive && item.name != '..')
+                                    ? Text('created: ${item.created}\nmodified: ${item.modified}')
+                                    : null,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                trailing: (!isDrive && item.name != '..')
+                                    ? Obx(
+                                        () => Checkbox(
+                                          value: item.isSelected.value,
+                                          onChanged: (val) => item.isSelected.value = val ?? false,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   }),
                 ),
@@ -225,7 +234,8 @@ class UserScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             Obx(() => Text(home.userSettings['target'].toString())),
-            Obx(() => Text(home.userTree.toString())),
+            // Obx(() => Text(home.userTree.toString())),
+            
             Obx(() {
               final entries = home.userTree.entries.toList();
 
@@ -246,7 +256,7 @@ class UserScreen extends StatelessWidget {
                     title: Text(timestamp),
                     subtitle: Text('Items: ${snapshot.length}'),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
+                      icon: const Icon(Icons.close),
                       onPressed: () {
                         home.userTree.remove(timestamp);
                       },

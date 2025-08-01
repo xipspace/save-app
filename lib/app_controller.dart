@@ -155,10 +155,39 @@ class ViewController extends GetxController {
           itemCount: 0,
         )..isSelected.value = false,
       );
+    } else {
+      final drives = readDrives();
+      viewContents.value = drives;
+      return;
     }
 
     viewContents.value = tempContents;
   }
+
+
+  List<FolderItem> readDrives() {
+    final drives = <FolderItem>[];
+
+    for (var letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')) {
+      final path = '$letter:\\';
+      final dir = Directory(path);
+
+      if (dir.existsSync()) {
+        drives.add(
+          FolderItem(
+            name: path,
+            path: path,
+            created: DateTime.fromMillisecondsSinceEpoch(0),
+            modified: DateTime.fromMillisecondsSinceEpoch(0),
+            itemCount: 0,
+          )..isSelected.value = false,
+        );
+      }
+    }
+
+    return drives;
+  }
+
 
   void sortNameAsc() {
     viewContents.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -204,6 +233,8 @@ class ViewController extends GetxController {
 
     home.showDialog('Target', 'Saved ${selected.length} items');
   }
+
+  
 
 
 }
