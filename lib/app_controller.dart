@@ -193,6 +193,9 @@ class ViewController extends GetxController {
       return;
     }
 
+    final timestampKey = home.generateTimestamp();
+    home.userTree[timestampKey] = selected;
+
     home.userSettings['home'] = viewLocation;
     home.userSettings['target'] = selected;
 

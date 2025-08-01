@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'app_controller.dart';
 import 'app_model.dart';
 
-enum ActionType { home, save, compress, extract }
+enum ActionType { home, refresh, add, restore, compress, extract }
 
 void main() => runApp(const MainApp());
 
@@ -45,10 +45,20 @@ class HomeScreen extends StatelessWidget {
     final Map<ActionType, VoidCallback> actionMap = {
       ActionType.home: () async {
         // go to home
-        home.showDialog('Home', home.userSettings['home'].toString());
+        final savedHome = home.userSettings['home'];
+        if (savedHome is String && savedHome.isNotEmpty) {
+          view.viewLocation = savedHome;
+          await view.readLocation();
+        } else {
+          home.showDialog('Home Error', 'No valid home path set.');
+        }
+        // home.showDialog('Home', home.userSettings['home'].toString());
         // home.showDialog('Tree', home.userSettings['tree'].toString());
       },
-      ActionType.save: () async {
+      ActionType.refresh: () async {
+        await view.readLocation();
+      },
+      ActionType.add: () async {
         final currentFolder = view.viewLocation;
         await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
         await view.saveSelectedItems();
@@ -96,7 +106,7 @@ class HomeScreen extends StatelessWidget {
                     children: ActionType.values.map((action) {
                       final label = action.name.capitalizeFirst ?? action.name;
                       return SizedBox(
-                        width: 150,
+                        width: 100,
                         child: Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(
@@ -214,7 +224,38 @@ class UserScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
+            Obx(() => Text(home.userSettings['target'].toString())),
             Obx(() => Text(home.userTree.toString())),
+            Obx(() {
+              final entries = home.userTree.entries.toList();
+
+              if (entries.isEmpty) {
+                return const Text('No snapshots available.');
+              }
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: entries.length,
+                itemBuilder: (context, index) {
+                  final entry = entries[index];
+                  final timestamp = entry.key;
+                  final List snapshot = entry.value;
+
+                  return ListTile(
+                    title: Text(timestamp),
+                    subtitle: Text('Items: ${snapshot.length}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () {
+                        home.userTree.remove(timestamp);
+                      },
+                    ),
+                  );
+                },
+              );
+            }),
+            
 
             const SizedBox(height: 20),
           ],

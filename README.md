@@ -8,7 +8,8 @@ A toolbox for snapshot game progress and counter autosave system or save slot li
 
 to do:
 1. track multiple locations
-2. key bindings
+2. user collection methods
+3. key bindings
 
 <br>
 Copyright (c) 2025 @xipspace
