@@ -239,31 +239,61 @@ class UserScreen extends StatelessWidget {
             Obx(() {
               final entries = home.userTree.entries.toList();
 
-              if (entries.isEmpty) {
-                return const Text('No snapshots available.');
-              }
+              return entries.isEmpty
+                  ? const Text('No snapshots available.')
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) {
+                        final entry = entries[index];
+                        final timestamp = entry.key;
+                        final List snapshot = entry.value;
 
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  final timestamp = entry.key;
-                  final List snapshot = entry.value;
-
-                  return ListTile(
-                    title: Text(timestamp),
-                    subtitle: Text('Items: ${snapshot.length}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        home.userTree.remove(timestamp);
+                        return Card(
+                          child: ListTile(
+                            title: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                                  child: Row(
+                                    children: [
+                                      Text(timestamp),
+                                      const Spacer(),
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            iconSize: 18,
+                                            icon: const Icon(Icons.edit_note),
+                                            onPressed: () {},
+                                          ),
+                                          IconButton(
+                                            iconSize: 18,
+                                            icon: const Icon(Icons.close),
+                                            onPressed: () => home.userTree.remove(timestamp),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(),
+                              ],
+                            ),
+                            subtitle: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Items: ${snapshot.length}'),
+                                  Text('Target: ${home.userTree.entries.toList()}'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
                       },
-                    ),
-                  );
-                },
-              );
+                    );
             }),
             
 
