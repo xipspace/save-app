@@ -19,11 +19,6 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        textTheme: const TextTheme(
-          titleSmall: TextStyle(fontSize: 16),
-          bodySmall: TextStyle(fontSize: 14),
-          labelSmall: TextStyle(fontSize: 12),
-        ),
       ),
       initialRoute: '/',
       initialBinding: AppBindings(),
@@ -168,6 +163,16 @@ class HomeScreen extends StatelessWidget {
                                             children: [
                                               IconButton(
                                                 iconSize: 18,
+                                                icon: const Icon(Icons.add),
+                                                onPressed: () {},
+                                              ),
+                                              IconButton(
+                                                iconSize: 18,
+                                                icon: const Icon(Icons.replay),
+                                                onPressed: () {},
+                                              ),
+                                              IconButton(
+                                                iconSize: 18,
                                                 icon: const Icon(Icons.edit_note),
                                                 onPressed: () {},
                                               ),
@@ -191,7 +196,7 @@ class HomeScreen extends StatelessWidget {
                                     children: [
                                       Text('Items: ${snapshot.length}'),
                                       // Text('Target: ${home.userTree.entries.toList()}'),
-                                      Text('Target: ${snapshot.map((item) => item).join(', ')}'),
+                                      Text('Target: ${snapshot.map((item) => item).join('\n')}'),
                                     ],
                                   ),
                                 ),
@@ -296,7 +301,7 @@ class UserScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final HomeController home = Get.find<HomeController>();
-    final MediaQueryData mediaQueryData = MediaQuery.of(context);
+    final MediaQueryData media = MediaQuery.of(context);
 
     return Scaffold(
       appBar: AppBar(),
@@ -311,10 +316,10 @@ class UserScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const Text('device info'),
               const SizedBox(height: 20),
-              Text('Screen Size: ${mediaQueryData.size.width} x ${mediaQueryData.size.height}'),
-              Text('Orientation: ${mediaQueryData.orientation}'),
-              Text('Device Pixel Ratio: ${mediaQueryData.devicePixelRatio}'),
-              Text('Device Theme: ${mediaQueryData.platformBrightness}'),
+              Text('Screen Size: ${media.size.width} x ${media.size.height}'),
+              Text('Orientation: ${media.orientation}'),
+              Text('Device Pixel Ratio: ${media.devicePixelRatio}'),
+              Text('Device Theme: ${media.platformBrightness}'),
         
               Text('GetX isDarkMode: ${Get.isDarkMode}'),
               // width: Get.width * 0.95,
@@ -322,7 +327,7 @@ class UserScreen extends StatelessWidget {
         
               const SizedBox(height: 20),
         
-              Obx(() => Text(home.userSettings['target'].toString())),
+              Obx(() => Text(home.userSettings['selection'].toString())),
               // Obx(() => Text(home.userTree.toString())),
               
               

@@ -71,7 +71,7 @@ class HomeController extends GetxController {
 
 class ViewController extends GetxController {
   final HomeController home = Get.find<HomeController>();
-  final stream = Get.find<StreamController>();
+  final StreamController stream = Get.find<StreamController>();
 
   String viewLocation = '';
   RxList<FileObject> viewContents = <FileObject>[].obs;
