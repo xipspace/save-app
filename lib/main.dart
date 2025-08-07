@@ -129,65 +129,153 @@ class HomeScreen extends StatelessWidget {
                 ),
 
 
+
                 const SizedBox(height: 20),
 
 
+                // game needs to have a default place to archive (home), the top watched folder, and be customizable
+                // revert from a specific archive or the last one
+                // save and restore triggered by global HK and interval
+
+
+                Obx(() {
+                  final entries = home.userTree.entries.toList();
+
+                  return entries.isEmpty
+                      ? const Text('No snapshots available.')
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: entries.length,
+                          itemBuilder: (context, index) {
+                            final entry = entries[index];
+                            final timestamp = entry.key;
+                            final List snapshot = entry.value;
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
+                              elevation: 2.0,
+                              child: ListTile(
+                                title: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                                      child: Row(
+                                        children: [
+                                          Text(timestamp),
+                                          const Spacer(),
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                iconSize: 18,
+                                                icon: const Icon(Icons.edit_note),
+                                                onPressed: () {},
+                                              ),
+                                              IconButton(
+                                                iconSize: 18,
+                                                icon: const Icon(Icons.close),
+                                                onPressed: () => home.userTree.remove(timestamp),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Divider(),
+                                  ],
+                                ),
+                                subtitle: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Items: ${snapshot.length}'),
+                                      // Text('Target: ${home.userTree.entries.toList()}'),
+                                      Text('Target: ${snapshot.map((item) => item).join(', ')}'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                }),
+
+
+                const SizedBox(height: 20),
+
+
+
+                // add dynamic list with traling checkboxes as file explorer using readLocation, dont use icons
+                // folders first files after
+                // use a '..' to navigateTo parent
+                // use a '/' as prefix in the view to indicate a folder and the parent folder '..', except drivers, we still need '..' in a root folder because it travels us to the driver list
+                // traveling parent from a root folder shows the driver list so user can select which driver to navigateTo
+                // adjust the model to properly handles drivers as C:
+                // dont show metadata for '..' or drivers
+                // dont show checkboxes for drivers
+                // the checkboxes will update userSettings.selection after calling saveSelectedItems
+                // tap on a folder / driver / .. navigateTo() , tap on a file does nothing (later will be a call)
+                // add error handling for cases where the directory or file cannot be accessed due to permissions issues
+                // root contents isnt the same as driver list
+                // map the list in a dropdown for selection
 
                 Card(
                   margin: const EdgeInsets.symmetric(horizontal: 10),
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Obx(() {
-                    final items = view.viewContents;
-                    if (items.isEmpty) {
-                      return const Padding(padding: EdgeInsets.all(10), child: Text('This folder is empty.'));
-                    }
+                  child: Material(
+                    color: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    clipBehavior: Clip.antiAlias,
+                    child: Obx(() {
+                      final items = view.viewContents;
 
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          final isDrive =
-                              item is FolderItem && RegExp(r'^[A-Z]:\\$', caseSensitive: false).hasMatch(item.name);
-                          final displayName = item is FolderItem && !item.name.contains(':')
-                              ? '/${item.name}'
-                              : item.name;
-
-                          return Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                if (item is FolderItem) {
-                                  view.viewLocation = item.path;
-                                  view.readLocation();
-                                }
+                      return items.isEmpty
+                          ? const Text('This folder is empty.')
+                          // add list from here
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: items.length,
+                              itemBuilder: (context, index) {
+                                final item = items[index];
+                                final isDrive = item is FolderItem && RegExp(r'^[A-Z]:\\$', caseSensitive: false).hasMatch(item.name);
+                                final displayName = item is FolderItem && !item.name.contains(':')
+                                    ? '/${item.name}'
+                                    : item.name;
+                                
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      if (item is FolderItem) {
+                                        view.viewLocation = item.path;
+                                        view.readLocation();
+                                      }
+                                    },
+                                    child: ListTile(
+                                      dense: true,
+                                      title: Text(displayName, style: const TextStyle(fontSize: 14)),
+                                      subtitle: (!isDrive && item.name != '..')
+                                          ? Text('created: ${item.created}\nmodified: ${item.modified}')
+                                          : null,
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      trailing: (!isDrive && item.name != '..')
+                                          ? Obx(
+                                              () => Checkbox(
+                                                value: item.isSelected.value,
+                                                onChanged: (val) => item.isSelected.value = val ?? false,
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                );
                               },
-                              child: ListTile(
-                                dense: true,
-                                title: Text(displayName, style: const TextStyle(fontSize: 14)),
-                                subtitle: (!isDrive && item.name != '..')
-                                    ? Text('created: ${item.created}\nmodified: ${item.modified}')
-                                    : null,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                trailing: (!isDrive && item.name != '..')
-                                    ? Obx(
-                                        () => Checkbox(
-                                          value: item.isSelected.value,
-                                          onChanged: (val) => item.isSelected.value = val ?? false,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  }),
+                            );
+                    }),
+                  ),
                 ),
 
                 
@@ -212,93 +300,37 @@ class UserScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(),
-      body: Center(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            Obx(() => Text(home.timeStamp.value.toString())),
-
-            const SizedBox(height: 20),
-            const Text('device info'),
-            const SizedBox(height: 20),
-            Text('Screen Size: ${mediaQueryData.size.width} x ${mediaQueryData.size.height}'),
-            Text('Orientation: ${mediaQueryData.orientation}'),
-            Text('Device Pixel Ratio: ${mediaQueryData.devicePixelRatio}'),
-            Text('Device Theme: ${mediaQueryData.platformBrightness}'),
-
-            Text('GetX isDarkMode: ${Get.isDarkMode}'),
-            // width: Get.width * 0.95,
-            // height: Get.height * 0.95,
-
-            const SizedBox(height: 20),
-
-            Obx(() => Text(home.userSettings['target'].toString())),
-            // Obx(() => Text(home.userTree.toString())),
-            
-            Obx(() {
-              final entries = home.userTree.entries.toList();
-
-              return entries.isEmpty
-                  ? const Text('No snapshots available.')
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: entries.length,
-                      itemBuilder: (context, index) {
-                        final entry = entries[index];
-                        final timestamp = entry.key;
-                        final List snapshot = entry.value;
-
-                        return Card(
-                          child: ListTile(
-                            title: Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                                  child: Row(
-                                    children: [
-                                      Text(timestamp),
-                                      const Spacer(),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            iconSize: 18,
-                                            icon: const Icon(Icons.edit_note),
-                                            onPressed: () {},
-                                          ),
-                                          IconButton(
-                                            iconSize: 18,
-                                            icon: const Icon(Icons.close),
-                                            onPressed: () => home.userTree.remove(timestamp),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Divider(),
-                              ],
-                            ),
-                            subtitle: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Items: ${snapshot.length}'),
-                                  Text('Target: ${home.userTree.entries.toList()}'),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-            }),
-            
-
-            const SizedBox(height: 20),
-          ],
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+        
+              Obx(() => Text(home.timeStamp.value.toString())),
+        
+              const SizedBox(height: 20),
+              const Text('device info'),
+              const SizedBox(height: 20),
+              Text('Screen Size: ${mediaQueryData.size.width} x ${mediaQueryData.size.height}'),
+              Text('Orientation: ${mediaQueryData.orientation}'),
+              Text('Device Pixel Ratio: ${mediaQueryData.devicePixelRatio}'),
+              Text('Device Theme: ${mediaQueryData.platformBrightness}'),
+        
+              Text('GetX isDarkMode: ${Get.isDarkMode}'),
+              // width: Get.width * 0.95,
+              // height: Get.height * 0.95,
+        
+              const SizedBox(height: 20),
+        
+              Obx(() => Text(home.userSettings['target'].toString())),
+              // Obx(() => Text(home.userTree.toString())),
+              
+              
+              
+        
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(

@@ -7,11 +7,16 @@ abstract class FileObject {
   final DateTime modified;
   final RxBool isSelected = false.obs;
 
+  final bool isSpecial;
+  final bool isDrive;
+
   FileObject({
     required this.name,
     required this.path,
     required this.created,
     required this.modified,
+    this.isSpecial = false,
+    this.isDrive = false,
   });
 
   String get identitySignature => '$path|$created';
@@ -28,6 +33,8 @@ class FileItem extends FileObject {
     required super.modified,
     required this.size,
     required this.extension,
+    super.isSpecial = false,
+    super.isDrive = false,
   });
 }
 
@@ -40,5 +47,7 @@ class FolderItem extends FileObject {
     required super.created,
     required super.modified,
     required this.itemCount,
+    super.isSpecial = false,
+    super.isDrive = false,
   });
 }

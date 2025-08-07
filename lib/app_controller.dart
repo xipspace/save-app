@@ -24,7 +24,7 @@ class HomeController extends GetxController {
   RxMap<String, dynamic> userSettings = <String, dynamic>{
     'settings': '', // settings.json location
     'home': '', // init location
-    'target': {}, // collection of objects to operate
+    'selection': {}, // collection of objects to operate
   }.obs;
 
   RxMap<String, dynamic> userTree = <String, dynamic>{}.obs;
@@ -86,9 +86,10 @@ class ViewController extends GetxController {
   }
 
   Future<void> readLocation() async {
-    final dir = Directory(
-      viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}',
-    );
+    // read location should load the location from userSettings.home or from the default location as indicated at onReady
+    // it should populate viewContents with items from the model
+    // use model flags for content filtering
+    final dir = Directory(viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}');
 
     if (!await dir.exists()) {
       home.showDialog('Error', 'directory does not exist:\n$viewLocation');
@@ -155,55 +156,19 @@ class ViewController extends GetxController {
           itemCount: 0,
         )..isSelected.value = false,
       );
-    } else {
-      final drives = readDrives();
-      viewContents.value = drives;
-      return;
     }
 
     viewContents.value = tempContents;
+
+
   }
-
-
-  List<FolderItem> readDrives() {
-    final drives = <FolderItem>[];
-
-    for (var letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')) {
-      final path = '$letter:\\';
-      final dir = Directory(path);
-
-      if (dir.existsSync()) {
-        drives.add(
-          FolderItem(
-            name: path,
-            path: path,
-            created: DateTime.fromMillisecondsSinceEpoch(0),
-            modified: DateTime.fromMillisecondsSinceEpoch(0),
-            itemCount: 0,
-          )..isSelected.value = false,
-        );
-      }
-    }
-
-    return drives;
-  }
-
 
   void sortNameAsc() {
     viewContents.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
-  void sortFolderFirst() {
-    viewContents.sort((a, b) {
-      final aIsFolder = a is FolderItem ? 0 : 1;
-      final bIsFolder = b is FolderItem ? 0 : 1;
-      final typeCompare = aIsFolder.compareTo(bIsFolder);
-      if (typeCompare != 0) return typeCompare;
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
-  }
-
   Future<void> saveSelectedItems() async {
+    // Get the currently selected items
     final selected = viewContents
         .where((item) => item.isSelected.value && item.name != '..')
         .map(
@@ -211,8 +176,8 @@ class ViewController extends GetxController {
             'type': item is FolderItem ? 'folder' : 'file',
             'name': item.name,
             'path': item.path,
-            'created': item.created.toString(),
-            'modified': item.modified.toString(),
+            'created': item.created.toIso8601String(), // Convert to string
+            'modified': item.modified.toIso8601String(), // Convert to string
           },
         )
         .toList();
@@ -222,14 +187,17 @@ class ViewController extends GetxController {
       return;
     }
 
-    final timestampKey = home.generateTimestamp();
+    // Clear previous selections and set new selections
+    home.userSettings['selection'] = selected;
+
+    // Update the user tree with a new timestamp key
+    final timestampKey = 'game_snapshot_${home.generateTimestamp()}';
     home.userTree[timestampKey] = selected;
 
+    // Update settings in the stream
     home.userSettings['home'] = viewLocation;
-    home.userSettings['target'] = selected;
-
     await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
-    await stream.updateSettings(stream.settingsFilePath, 'target', selected);
+    await stream.updateSettings(stream.settingsFilePath, 'selection', selected);
 
     home.showDialog('Target', 'Saved ${selected.length} items');
   }
@@ -417,6 +385,3 @@ class ArchiveController extends GetxController {
     
   }
 }
-
-
-
