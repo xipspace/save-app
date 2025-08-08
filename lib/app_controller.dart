@@ -27,10 +27,15 @@ class HomeController extends GetxController {
     'selection': {}, // collection of objects to operate
   }.obs;
 
+  // tracking tree
   RxMap<String, dynamic> userTree = <String, dynamic>{}.obs;
 
-  void setStamp() => timeStamp.value = DateTime.now().toString();
+  // userTree methods
+  void setTree(String key, dynamic value) => userTree[key] = value;
+  void removeTree(String key) => userTree.remove(key);
+  void clearTree() => userTree.clear();
 
+  void setStamp() => timeStamp.value = DateTime.now().toString();
   void setMsg(String text) {
     if (msg.value != text) {
       msg.value = text;
@@ -187,14 +192,14 @@ class ViewController extends GetxController {
       return;
     }
 
-    // Clear previous selections and set new selections
+    // clear previous selections and set new selections
     home.userSettings['selection'] = selected;
 
-    // Update the user tree with a new timestamp key
+    // update the user tree with a new timestamp key
     final timestampKey = 'game_snapshot_${home.generateTimestamp()}';
     home.userTree[timestampKey] = selected;
 
-    // Update settings in the stream
+    // update settings in the stream
     home.userSettings['home'] = viewLocation;
     await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
     await stream.updateSettings(stream.settingsFilePath, 'selection', selected);
@@ -303,7 +308,7 @@ class ArchiveController extends GetxController {
   // use saved target at usersettings
 
   Future<void> compressTarget() async {
-    final List targets = home.userSettings['target'] ?? [];
+    final List targets = home.userSettings['selection'] ?? [];
     final String homePath = home.userSettings['home'] ?? '';
 
     if (targets.isEmpty || homePath.isEmpty) {
@@ -356,6 +361,8 @@ class ArchiveController extends GetxController {
       }
 
       final timestamp = home.generateTimestamp();
+
+      // make prefix custom
       final zipName = 'archive_$timestamp.zip';
       final zipPath = '$homePath${Platform.pathSeparator}$zipName';
 

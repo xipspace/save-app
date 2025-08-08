@@ -89,39 +89,6 @@ class HomeScreen extends StatelessWidget {
                 // const SizedBox(height: 20),
                 // Obx(() => Text(home.userSettings.toString())),
                 const SizedBox(height: 20),
-                
-                
-                
-                Container(
-                  alignment: Alignment.center,
-                  constraints: const BoxConstraints(maxWidth: 300),
-                  child: Wrap(
-                    // spacing: 5,
-                    // runSpacing: 5,
-                    children: ActionType.values.map((action) {
-                      final label = action.name.capitalizeFirst ?? action.name;
-                      return SizedBox(
-                        width: 100,
-                        child: Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: Material(
-                            color: Colors.transparent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
-                            child: InkWell(
-                              onTap: actionMap[action],
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                                child: Center(child: Text(label)),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
 
 
 
@@ -207,101 +174,63 @@ class HomeScreen extends StatelessWidget {
                 }),
 
 
-                const SizedBox(height: 20),
-
-
-
-                // add dynamic list with traling checkboxes as file explorer using readLocation, dont use icons
-                // folders first files after
-                // use a '..' to navigateTo parent
-                // use a '/' as prefix in the view to indicate a folder and the parent folder '..', except drivers, we still need '..' in a root folder because it travels us to the driver list
-                // traveling parent from a root folder shows the driver list so user can select which driver to navigateTo
-                // adjust the model to properly handles drivers as C:
-                // dont show metadata for '..' or drivers
-                // dont show checkboxes for drivers
-                // the checkboxes will update userSettings.selection after calling saveSelectedItems
-                // tap on a folder / driver / .. navigateTo() , tap on a file does nothing (later will be a call)
-                // add error handling for cases where the directory or file cannot be accessed due to permissions issues
-                // root contents isnt the same as driver list
-                // map the list in a dropdown for selection
-
-                Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 10),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Material(
-                    color: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    clipBehavior: Clip.antiAlias,
-                    child: Obx(() {
-                      final items = view.viewContents;
-
-                      return items.isEmpty
-                          ? const Text('This folder is empty.')
-                          // add list from here
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: items.length,
-                              itemBuilder: (context, index) {
-                                final item = items[index];
-                                final isDrive = item is FolderItem && RegExp(r'^[A-Z]:\\$', caseSensitive: false).hasMatch(item.name);
-                                final displayName = item is FolderItem && !item.name.contains(':')
-                                    ? '/${item.name}'
-                                    : item.name;
-                                
-                                return Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      if (item is FolderItem) {
-                                        view.viewLocation = item.path;
-                                        view.readLocation();
-                                      }
-                                    },
-                                    child: ListTile(
-                                      dense: true,
-                                      title: Text(displayName, style: const TextStyle(fontSize: 14)),
-                                      subtitle: (!isDrive && item.name != '..')
-                                          ? Text('created: ${item.created}\nmodified: ${item.modified}')
-                                          : null,
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                      trailing: (!isDrive && item.name != '..')
-                                          ? Obx(
-                                              () => Checkbox(
-                                                value: item.isSelected.value,
-                                                onChanged: (val) => item.isSelected.value = val ?? false,
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                    }),
-                  ),
-                ),
-
+                // const SizedBox(height: 20),
                 
                 
+
                 const SizedBox(height: 20),
               ],
             ),
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () => Get.to(ExplorerScreen()),
+      ),
     );
   }
 }
 
-class UserScreen extends StatelessWidget {
-  const UserScreen({super.key});
+class ExplorerScreen extends StatelessWidget {
+  const ExplorerScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final HomeController home = Get.find<HomeController>();
     final MediaQueryData media = MediaQuery.of(context);
+    final home = Get.find<HomeController>();
+    final view = Get.find<ViewController>();
+    final stream = Get.find<StreamController>();
+    final archive = Get.find<ArchiveController>();
+
+    final Map<ActionType, VoidCallback> actionMap = {
+      ActionType.home: () async {
+        // go to home
+        final savedHome = home.userSettings['home'];
+        if (savedHome is String && savedHome.isNotEmpty) {
+          view.viewLocation = savedHome;
+          await view.readLocation();
+        } else {
+          home.showDialog('Home Error', 'No valid home path set.');
+        }
+        // home.showDialog('Home', home.userSettings['home'].toString());
+        // home.showDialog('Tree', home.userSettings['tree'].toString());
+      },
+      ActionType.refresh: () async {
+        await view.readLocation();
+      },
+      ActionType.add: () async {
+        final currentFolder = view.viewLocation;
+        await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
+        await view.saveSelectedItems();
+      },
+      ActionType.compress: () async {
+        await archive.compressTarget();
+      },
+      ActionType.extract: () async {
+        await archive.extractTarget();
+      },
+    };
 
     return Scaffold(
       appBar: AppBar(),
@@ -330,9 +259,157 @@ class UserScreen extends StatelessWidget {
               Obx(() => Text(home.userSettings['selection'].toString())),
               // Obx(() => Text(home.userTree.toString())),
               
-              
+              Container(
+                  alignment: Alignment.center,
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: Wrap(
+                    // spacing: 5,
+                    // runSpacing: 5,
+                    children: ActionType.values.map((action) {
+                      final label = action.name.capitalizeFirst ?? action.name;
+                      return SizedBox(
+                        width: 100,
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Material(
+                            color: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
+                            child: InkWell(
+                              onTap: actionMap[action],
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                                child: Center(child: Text(label)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
               
         
+              const SizedBox(height: 20),
+
+              // add dynamic list with traling checkboxes as file explorer using readLocation, dont use icons
+              // folders first files after
+              // use a '..' to navigateTo parent
+              // use a '/' as prefix in the view to indicate a folder and the parent folder '..', except drivers, we still need '..' in a root folder because it travels us to the driver list
+              // traveling parent from a root folder shows the driver list so user can select which driver to navigateTo
+              // adjust the model to properly handles drivers as C:
+              // dont show metadata for '..' or drivers
+              // dont show checkboxes for drivers
+              // the checkboxes will update userSettings.selection after calling saveSelectedItems
+              // tap on a folder / driver / .. navigateTo() , tap on a file does nothing (later will be a call)
+              // add error handling for cases where the directory or file cannot be accessed due to permissions issues
+              // root contents isnt the same as driver list
+              // map the list in a dropdown for selection
+
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Material(
+                  color: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  clipBehavior: Clip.antiAlias,
+                  child: Obx(() {
+                    final items = view.viewContents;
+
+                    return items.isEmpty
+                        ? const Text('This folder is empty.')
+                        // add list from here
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              final isDrive =
+                                  item is FolderItem && RegExp(r'^[A-Z]:\\$', caseSensitive: false).hasMatch(item.name);
+                              final displayName = item is FolderItem && !item.name.contains(':')
+                                  ? '/${item.name}'
+                                  : item.name;
+
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    if (item is FolderItem) {
+                                      view.viewLocation = item.path;
+                                      view.readLocation();
+                                    }
+                                  },
+                                  child: ListTile(
+                                    dense: true,
+                                    title: Text(displayName, style: const TextStyle(fontSize: 14)),
+                                    subtitle: (!isDrive && item.name != '..')
+                                        ? Text('created: ${item.created}\nmodified: ${item.modified}')
+                                        : null,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    trailing: (!isDrive && item.name != '..')
+                                        ? Obx(
+                                            () => Checkbox(
+                                              value: item.isSelected.value,
+                                              onChanged: (val) => item.isSelected.value = val ?? false,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class UserScreen extends StatelessWidget {
+  const UserScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final MediaQueryData media = MediaQuery.of(context);
+    final home = Get.find<HomeController>();
+
+    return Scaffold(
+      appBar: AppBar(),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+        
+              Obx(() => Text(home.timeStamp.value.toString())),
+        
+              const SizedBox(height: 20),
+              const Text('device info'),
+              const SizedBox(height: 20),
+              Text('Screen Size: ${media.size.width} x ${media.size.height}'),
+              Text('Orientation: ${media.orientation}'),
+              Text('Device Pixel Ratio: ${media.devicePixelRatio}'),
+              Text('Device Theme: ${media.platformBrightness}'),
+        
+              Text('GetX isDarkMode: ${Get.isDarkMode}'),
+              // width: Get.width * 0.95,
+              // height: Get.height * 0.95,
+        
+              const SizedBox(height: 20),
+        
+              Obx(() => Text(home.userSettings['selection'].toString())),
+              // Obx(() => Text(home.userTree.toString())),
+
+
+
               const SizedBox(height: 20),
             ],
           ),
