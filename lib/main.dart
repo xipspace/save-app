@@ -33,38 +33,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final home = Get.find<HomeController>();
-    final view = Get.find<ViewController>();
-    final stream = Get.find<StreamController>();
-    final archive = Get.find<ArchiveController>();
-
-    final Map<ActionType, VoidCallback> actionMap = {
-      ActionType.home: () async {
-        // go to home
-        final savedHome = home.userSettings['home'];
-        if (savedHome is String && savedHome.isNotEmpty) {
-          view.viewLocation = savedHome;
-          await view.readLocation();
-        } else {
-          home.showDialog('Home Error', 'No valid home path set.');
-        }
-        // home.showDialog('Home', home.userSettings['home'].toString());
-        // home.showDialog('Tree', home.userSettings['tree'].toString());
-      },
-      ActionType.refresh: () async {
-        await view.readLocation();
-      },
-      ActionType.add: () async {
-        final currentFolder = view.viewLocation;
-        await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
-        await view.saveSelectedItems();
-      },
-      ActionType.compress: () async {
-        await archive.compressTarget();
-      },
-      ActionType.extract: () async {
-        await archive.extractTarget();
-      },
-    };
+    // final view = Get.find<ViewController>();
+    // final stream = Get.find<StreamController>();
+    // final archive = Get.find<ArchiveController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -90,16 +61,11 @@ class HomeScreen extends StatelessWidget {
                 // Obx(() => Text(home.userSettings.toString())),
                 const SizedBox(height: 20),
 
-
-
                 const SizedBox(height: 20),
-
 
                 // game needs to have a default place to archive (home), the top watched folder, and be customizable
                 // revert from a specific archive or the last one
                 // save and restore triggered by global HK and interval
-
-
                 Obx(() {
                   final entries = home.userTree.entries.toList();
 
@@ -128,11 +94,7 @@ class HomeScreen extends StatelessWidget {
                                           const Spacer(),
                                           Row(
                                             children: [
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.add),
-                                                onPressed: () {},
-                                              ),
+                                              IconButton(iconSize: 18, icon: const Icon(Icons.add), onPressed: () {}),
                                               IconButton(
                                                 iconSize: 18,
                                                 icon: const Icon(Icons.replay),
@@ -173,11 +135,7 @@ class HomeScreen extends StatelessWidget {
                         );
                 }),
 
-
                 // const SizedBox(height: 20),
-                
-                
-
                 const SizedBox(height: 20),
               ],
             ),
@@ -197,7 +155,6 @@ class ExplorerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final MediaQueryData media = MediaQuery.of(context);
     final home = Get.find<HomeController>();
     final view = Get.find<ViewController>();
     final stream = Get.find<StreamController>();
@@ -239,58 +196,48 @@ class ExplorerScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 20),
-        
+
+              Obx(() => Text(home.msg.value.toString())),
               Obx(() => Text(home.timeStamp.value.toString())),
-        
+
               const SizedBox(height: 20),
-              const Text('device info'),
-              const SizedBox(height: 20),
-              Text('Screen Size: ${media.size.width} x ${media.size.height}'),
-              Text('Orientation: ${media.orientation}'),
-              Text('Device Pixel Ratio: ${media.devicePixelRatio}'),
-              Text('Device Theme: ${media.platformBrightness}'),
-        
-              Text('GetX isDarkMode: ${Get.isDarkMode}'),
-              // width: Get.width * 0.95,
-              // height: Get.height * 0.95,
-        
-              const SizedBox(height: 20),
-        
-              Obx(() => Text(home.userSettings['selection'].toString())),
-              // Obx(() => Text(home.userTree.toString())),
-              
+
               Container(
-                  alignment: Alignment.center,
-                  constraints: const BoxConstraints(maxWidth: 300),
-                  child: Wrap(
-                    // spacing: 5,
-                    // runSpacing: 5,
-                    children: ActionType.values.map((action) {
-                      final label = action.name.capitalizeFirst ?? action.name;
-                      return SizedBox(
-                        width: 100,
-                        child: Card(
-                          elevation: 2,
+                alignment: Alignment.center,
+                constraints: const BoxConstraints(maxWidth: 300),
+                child: Wrap(
+                  // spacing: 5,
+                  // runSpacing: 5,
+                  children: ActionType.values.map((action) {
+                    final label = action.name.capitalizeFirst ?? action.name;
+                    return SizedBox(
+                      width: 100,
+                      child: Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Material(
+                          color: Colors.transparent,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: Material(
-                            color: Colors.transparent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
-                            child: InkWell(
-                              onTap: actionMap[action],
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                                child: Center(child: Text(label)),
-                              ),
+                          clipBehavior: Clip.antiAlias, // ensures the ripple is clipped
+                          child: InkWell(
+                            onTap: actionMap[action],
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              child: Center(child: Text(label)),
                             ),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              
-        
+              ),
+
+              const SizedBox(height: 20),
+
+              Obx(() => Text(home.userSettings['selection'].toString())),
+
+              // Obx(() => Text(home.userTree.toString())),
               const SizedBox(height: 20),
 
               // add dynamic list with traling checkboxes as file explorer using readLocation, dont use icons
@@ -306,7 +253,6 @@ class ExplorerScreen extends StatelessWidget {
               // add error handling for cases where the directory or file cannot be accessed due to permissions issues
               // root contents isnt the same as driver list
               // map the list in a dropdown for selection
-
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 10),
                 elevation: 2,
@@ -388,9 +334,9 @@ class UserScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 20),
-        
+
               Obx(() => Text(home.timeStamp.value.toString())),
-        
+
               const SizedBox(height: 20),
               const Text('device info'),
               const SizedBox(height: 20),
@@ -398,27 +344,22 @@ class UserScreen extends StatelessWidget {
               Text('Orientation: ${media.orientation}'),
               Text('Device Pixel Ratio: ${media.devicePixelRatio}'),
               Text('Device Theme: ${media.platformBrightness}'),
-        
+
               Text('GetX isDarkMode: ${Get.isDarkMode}'),
+
               // width: Get.width * 0.95,
               // height: Get.height * 0.95,
-        
               const SizedBox(height: 20),
-        
+
               Obx(() => Text(home.userSettings['selection'].toString())),
+
               // Obx(() => Text(home.userTree.toString())),
-
-
-
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () => home.setStamp(),
-      ),
+      floatingActionButton: FloatingActionButton(child: const Icon(Icons.add), onPressed: () => home.setStamp()),
     );
   }
 }
