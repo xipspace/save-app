@@ -29,11 +29,38 @@ class HomeController extends GetxController {
 
   // convert to model object
   RxMap<String, dynamic> userTree = <String, dynamic>{}.obs;
+  RxMap<String, Snapshot> snapshots = <String, Snapshot>{}.obs;
 
   // userTree methods
   void setTree(String key, dynamic value) => userTree[key] = value;
   void removeTree(String key) => userTree.remove(key);
   void clearTree() => userTree.clear();
+
+  void createSnapshot(String title, String home, List<FileObject> selectedItems) {
+  final id = generateTimestamp();
+
+  final snapshot = Snapshot(
+      id: id,
+      title: title,
+      home: home,
+      items: selectedItems
+          .map(
+            (item) => {
+              'type': item is FolderItem ? 'folder' : 'file',
+              'name': item.name,
+              'path': item.path,
+              'created': item.created.toIso8601String(),
+              'modified': item.modified.toIso8601String(),
+              if (item is FileItem) 'size': item.size,
+              if (item is FileItem) 'extension': item.extension,
+              if (item is FolderItem) 'itemCount': item.itemCount,
+            },
+          )
+          .toList(),
+    );
+
+    snapshots[id] = snapshot;
+  }
 
   void setStamp() => timeStamp.value = DateTime.now().toString();
   void setMsg(String text) {
@@ -181,8 +208,8 @@ class ViewController extends GetxController {
             'type': item is FolderItem ? 'folder' : 'file',
             'name': item.name,
             'path': item.path,
-            'created': item.created.toIso8601String(), // Convert to string
-            'modified': item.modified.toIso8601String(), // Convert to string
+            'created': item.created.toIso8601String(),
+            'modified': item.modified.toIso8601String(),
           },
         )
         .toList();
@@ -204,10 +231,16 @@ class ViewController extends GetxController {
     await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
     await stream.updateSettings(stream.settingsFilePath, 'selection', selected);
 
-    home.showDialog('Target', 'Saved ${selected.length} items');
-  }
 
+    // add a snapshot with selected items
+    // preserve type for watched items
+    
+    // add title = timestampKey, home = viewLocation, items = selected
+    // home.createSnapshot(timestampKey, viewLocation, selected);
+
+    home.showDialog('Target', 'Saved ${selected.length} items');
   
+  }
 
 
 }

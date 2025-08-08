@@ -55,24 +55,18 @@ class FolderItem extends FileObject {
 class Snapshot {
   final String id;
   String title;
+  String home;
   List<Map<String, dynamic>> items;
 
-  Snapshot({
-    required this.id,
-    required this.title,
-    required this.items,
-  });
+  Snapshot({required this.id, required this.title, required this.home, required this.items});
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'items': items,
-      };
+  Map<String, dynamic> toJson() => {'id': id, 'title': title, 'home': home, 'items': items};
 
   factory Snapshot.fromJson(Map<String, dynamic> json) {
     return Snapshot(
       id: json['id'],
       title: json['title'],
+      home: json['home'],
       items: List<Map<String, dynamic>>.from(json['items']),
     );
   }
