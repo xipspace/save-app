@@ -51,3 +51,29 @@ class FolderItem extends FileObject {
     super.isDrive = false,
   });
 }
+
+class Snapshot {
+  final String id;
+  String title;
+  List<Map<String, dynamic>> items;
+
+  Snapshot({
+    required this.id,
+    required this.title,
+    required this.items,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'items': items,
+      };
+
+  factory Snapshot.fromJson(Map<String, dynamic> json) {
+    return Snapshot(
+      id: json['id'],
+      title: json['title'],
+      items: List<Map<String, dynamic>>.from(json['items']),
+    );
+  }
+}

@@ -27,7 +27,7 @@ class HomeController extends GetxController {
     'selection': {}, // collection of objects to operate
   }.obs;
 
-  // tracking tree
+  // convert to model object
   RxMap<String, dynamic> userTree = <String, dynamic>{}.obs;
 
   // userTree methods

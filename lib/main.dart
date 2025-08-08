@@ -66,11 +66,12 @@ class HomeScreen extends StatelessWidget {
                 // game needs to have a default place to archive (home), the top watched folder, and be customizable
                 // revert from a specific archive or the last one
                 // save and restore triggered by global HK and interval
+                
                 Obx(() {
                   final entries = home.userTree.entries.toList();
 
                   return entries.isEmpty
-                      ? const Text('No snapshots available.')
+                      ? const Text('No snapshots available. Add one.')
                       : ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -243,16 +244,16 @@ class ExplorerScreen extends StatelessWidget {
               // add dynamic list with traling checkboxes as file explorer using readLocation, dont use icons
               // folders first files after
               // use a '..' to navigateTo parent
-              // use a '/' as prefix in the view to indicate a folder and the parent folder '..', except drivers, we still need '..' in a root folder because it travels us to the driver list
-              // traveling parent from a root folder shows the driver list so user can select which driver to navigateTo
+              // use a '/' as prefix in the view to indicate a folder and the parent folder '..', except drivers
               // adjust the model to properly handles drivers as C:
               // dont show metadata for '..' or drivers
-              // dont show checkboxes for drivers
-              // the checkboxes will update userSettings.selection after calling saveSelectedItems
-              // tap on a folder / driver / .. navigateTo() , tap on a file does nothing (later will be a call)
+              // dont show checkboxes for '..' or drivers
+              // checkbox update userSettings.selection after calling saveSelectedItems
+              // tap on a folder / driver / .. navigateTo() , tap on a file does nothing
               // add error handling for cases where the directory or file cannot be accessed due to permissions issues
               // root contents isnt the same as driver list
-              // map the list in a dropdown for selection
+              // map the list in a dropdown for selection and update the view with their contents
+
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 10),
                 elevation: 2,
@@ -335,6 +336,7 @@ class UserScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
 
+              Obx(() => Text(home.msg.value.toString())),
               Obx(() => Text(home.timeStamp.value.toString())),
 
               const SizedBox(height: 20),
