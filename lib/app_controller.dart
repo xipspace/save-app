@@ -109,12 +109,40 @@ class ViewController extends GetxController {
   RxList<FileObject> viewContents = <FileObject>[].obs;
   final String defaultLocation = Directory.current.path;
 
+  RxList<String> availableDisks = <String>[].obs;
+
   @override
   void onReady() {
     super.onReady();
     final savedLocation = home.userSettings['home'];
     viewLocation = (savedLocation is String && savedLocation.isNotEmpty) ? savedLocation : defaultLocation;
+
+    loadDisks();
     readLocation();
+  }
+
+  // get disks for Windows
+  Future<List<String>> getAvailableDisks() async {
+    if (!Platform.isWindows) return [];
+    List<String> disks = [];
+    for (var letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')) {
+      final path = '$letter:\\';
+      if (await Directory(path).exists()) {
+        disks.add(path);
+      }
+    }
+    return disks;
+  }
+
+  // populate availableDisks
+  Future<void> loadDisks() async {
+    availableDisks.value = await getAvailableDisks();
+  }
+
+  // change disk and load its contents
+  Future<void> changeDisk(String diskPath) async {
+    viewLocation = diskPath;
+    await readLocation();
   }
 
   Future<void> readLocation() async {
@@ -338,7 +366,9 @@ class ArchiveController extends GetxController {
   final HomeController home = Get.find<HomeController>();
   final ViewController view = Get.find<ViewController>();
 
-  // use saved target at usersettings
+  // grab the path from snapshot to compress when calling from the card
+  // put at snapshot home
+  // add prefix input from user
 
   Future<void> compressTarget() async {
     final List targets = home.userSettings['selection'] ?? [];
@@ -421,7 +451,7 @@ class ArchiveController extends GetxController {
 
   Future<void> extractTarget() async {
     
-    // 
+    // needs to able to overwrite all files from target
     
   }
 }

@@ -35,7 +35,7 @@ class HomeScreen extends StatelessWidget {
     final home = Get.find<HomeController>();
     // final view = Get.find<ViewController>();
     // final stream = Get.find<StreamController>();
-    // final archive = Get.find<ArchiveController>();
+    final archive = Get.find<ArchiveController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -95,22 +95,10 @@ class HomeScreen extends StatelessWidget {
                                           const Spacer(),
                                           Row(
                                             children: [
-                                              IconButton(iconSize: 18, icon: const Icon(Icons.add), onPressed: () {}),
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.replay),
-                                                onPressed: () {},
-                                              ),
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.edit_note),
-                                                onPressed: () {},
-                                              ),
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.close),
-                                                onPressed: () => home.userTree.remove(timestamp),
-                                              ),
+                                              IconButton(iconSize: 18, icon: const Icon(Icons.add), onPressed: () => archive.compressTarget()),
+                                              IconButton(iconSize: 18, icon: const Icon(Icons.replay), onPressed: () {}),
+                                              IconButton(iconSize: 18, icon: const Icon(Icons.edit_note), onPressed: () {}),
+                                              IconButton(iconSize: 18, icon: const Icon(Icons.close), onPressed: () => home.userTree.remove(timestamp)),
                                             ],
                                           ),
                                         ],
@@ -145,7 +133,7 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () => Get.to(ExplorerScreen()),
+        onPressed: () => Get.to(() => ExplorerScreen()),
       ),
     );
   }
@@ -238,6 +226,25 @@ class ExplorerScreen extends StatelessWidget {
 
               Obx(() => Text(home.userSettings['selection'].toString())),
 
+
+              Obx(() {
+                final disks = view.availableDisks;
+                if (disks.isEmpty) {
+                  return const Text('No disks found');
+                }
+                return DropdownButton<String>(
+                  value: disks.contains(view.viewLocation) ? view.viewLocation : disks.first,
+                  items: disks.map((disk) {
+                    return DropdownMenuItem(value: disk, child: Text(disk));
+                  }).toList(),
+                  onChanged: (newDisk) {
+                    if (newDisk != null) {
+                      view.changeDisk(newDisk);
+                    }
+                  },
+                );
+              }),
+
               // Obx(() => Text(home.userTree.toString())),
               const SizedBox(height: 20),
 
@@ -319,6 +326,8 @@ class ExplorerScreen extends StatelessWidget {
     );
   }
 }
+
+
 
 class UserScreen extends StatelessWidget {
   const UserScreen({super.key});
