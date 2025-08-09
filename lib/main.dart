@@ -59,71 +59,16 @@ class HomeScreen extends StatelessWidget {
                 Obx(() => Text(home.timeStamp.value)),
                 // const SizedBox(height: 20),
                 // Obx(() => Text(home.userSettings.toString())),
-                const SizedBox(height: 20),
+                //const SizedBox(height: 20),
 
                 const SizedBox(height: 20),
 
-                // game needs to have a default place to archive (home), the top watched folder, and be customizable
+                // game needs to have a default place to archive (home) and custom
+                // be able to edit targets of a current snapshot
+                // add custom prefix within object model to be used in the archive process
                 // revert from a specific archive or the last one
                 // save and restore triggered by global HK and interval
                 
-                
-                Obx(() {
-                  final entries = home.userTree.entries.toList();
-
-                  return entries.isEmpty
-                      ? const Text('No snapshots available. Add one.')
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: entries.length,
-                          itemBuilder: (context, index) {
-                            final entry = entries[index];
-                            final timestamp = entry.key;
-                            final List snapshot = entry.value;
-
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
-                              elevation: 2.0,
-                              child: ListTile(
-                                title: Column(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                                      child: Row(
-                                        children: [
-                                          Text(timestamp),
-                                          const Spacer(),
-                                          Row(
-                                            children: [
-                                              IconButton(iconSize: 18, icon: const Icon(Icons.add), onPressed: () => archive.compressTarget()),
-                                              IconButton(iconSize: 18, icon: const Icon(Icons.replay), onPressed: () {}),
-                                              IconButton(iconSize: 18, icon: const Icon(Icons.edit_note), onPressed: () {}),
-                                              IconButton(iconSize: 18, icon: const Icon(Icons.close), onPressed: () => home.userTree.remove(timestamp)),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Divider(),
-                                  ],
-                                ),
-                                subtitle: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Items: ${snapshot.length}'),
-                                      // Text('Target: ${home.userTree.entries.toList()}'),
-                                      Text('Target: ${snapshot.map((item) => item).join('\n')}'),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                }),
 
                 Obx(() {
                   final entries = home.snapshots.entries.toList();
@@ -149,7 +94,7 @@ class HomeScreen extends StatelessWidget {
                                       padding: const EdgeInsets.symmetric(horizontal: 5.0),
                                       child: Row(
                                         children: [
-                                          Text(snapshotId),
+                                          Text(snapshot.title),
                                           const Spacer(),
                                           Row(
                                             children: [
@@ -195,9 +140,14 @@ class HomeScreen extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Home: ${snapshot.home}'),
-                                      Text('Items: ${snapshot.items.length}'),
-                                      ...snapshot.items.map((item) => Text(item.path)),
+                                      
+                                      Text('id: $snapshotId'),
+                                      Text('home: ${snapshot.home}'),
+                                      Text('items: ${snapshot.items.length}'),
+                                      
+                                      const SizedBox(height: 5),
+
+                                      ...snapshot.items.map((item) => Text(' item: ${item.path}', style: TextStyle(fontSize: 12))),
                                     ],
                                   ),
                                 ),
