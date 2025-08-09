@@ -67,6 +67,7 @@ class HomeScreen extends StatelessWidget {
                 // revert from a specific archive or the last one
                 // save and restore triggered by global HK and interval
                 
+                
                 Obx(() {
                   final entries = home.userTree.entries.toList();
 
@@ -115,6 +116,88 @@ class HomeScreen extends StatelessWidget {
                                       Text('Items: ${snapshot.length}'),
                                       // Text('Target: ${home.userTree.entries.toList()}'),
                                       Text('Target: ${snapshot.map((item) => item).join('\n')}'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                }),
+
+                Obx(() {
+                  final entries = home.snapshots.entries.toList();
+
+                  return entries.isEmpty
+                      ? const Text('No snapshots available. Add one.')
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: entries.length,
+                          itemBuilder: (context, index) {
+                            final entry = entries[index];
+                            final snapshotId = entry.key;
+                            final snapshot = entry.value;
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
+                              elevation: 2.0,
+                              child: ListTile(
+                                title: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                                      child: Row(
+                                        children: [
+                                          Text(snapshotId),
+                                          const Spacer(),
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                iconSize: 18,
+                                                icon: const Icon(Icons.add),
+                                                onPressed: () {
+                                                  archive.compressTarget(
+                                                    // homePath: snapshot.home,
+                                                    // targets: snapshot.items.map((f) => f.path).toList(),
+                                                  );
+                                                },
+                                              ),
+                                              IconButton(
+                                                iconSize: 18,
+                                                icon: const Icon(Icons.replay),
+                                                onPressed: () {
+                                                  // home.restoreSnapshot(snapshotId);
+                                                },
+                                              ),
+                                              IconButton(
+                                                iconSize: 18,
+                                                icon: const Icon(Icons.edit_note),
+                                                onPressed: () {
+                                                  // hook up rename logic here if needed
+                                                },
+                                              ),
+                                              IconButton(
+                                                iconSize: 18,
+                                                icon: const Icon(Icons.close),
+                                                onPressed: () => home.snapshots.remove(snapshotId),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Divider(),
+                                  ],
+                                ),
+                                subtitle: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Home: ${snapshot.home}'),
+                                      Text('Items: ${snapshot.items.length}'),
+                                      ...snapshot.items.map((item) => Text(item.path)),
                                     ],
                                   ),
                                 ),
@@ -226,40 +309,29 @@ class ExplorerScreen extends StatelessWidget {
 
               Obx(() => Text(home.userSettings['selection'].toString())),
 
+              const SizedBox(height: 20),
+
 
               Obx(() {
                 final disks = view.availableDisks;
-                if (disks.isEmpty) {
-                  return const Text('No disks found');
-                }
-                return DropdownButton<String>(
-                  value: disks.contains(view.viewLocation) ? view.viewLocation : disks.first,
-                  items: disks.map((disk) {
-                    return DropdownMenuItem(value: disk, child: Text(disk));
-                  }).toList(),
-                  onChanged: (newDisk) {
-                    if (newDisk != null) {
-                      view.changeDisk(newDisk);
-                    }
-                  },
-                );
+
+                return disks.isEmpty
+                    ? const Text('No disks found')
+                    : DropdownButton<String>(
+                        value: disks.contains(view.viewLocation) ? view.viewLocation : disks.first,
+                        items: disks.map((disk) {
+                          return DropdownMenuItem(value: disk, child: Text(disk));
+                        }).toList(),
+                        onChanged: (newDisk) {
+                          if (newDisk != null) {
+                            view.changeDisk(newDisk);
+                          }
+                        },
+                      );
               }),
 
               // Obx(() => Text(home.userTree.toString())),
               const SizedBox(height: 20),
-
-              // add dynamic list with traling checkboxes as file explorer using readLocation, dont use icons
-              // folders first files after
-              // use a '..' to navigateTo parent
-              // use a '/' as prefix in the view to indicate a folder and the parent folder '..', except drivers
-              // adjust the model to properly handles drivers as C:
-              // dont show metadata for '..' or drivers
-              // dont show checkboxes for '..' or drivers
-              // checkbox update userSettings.selection after calling saveSelectedItems
-              // tap on a folder / driver / .. navigateTo() , tap on a file does nothing
-              // add error handling for cases where the directory or file cannot be accessed due to permissions issues
-              // root contents isnt the same as driver list
-              // map the list in a dropdown for selection and update the view with their contents
 
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 10),

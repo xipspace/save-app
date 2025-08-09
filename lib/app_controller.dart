@@ -36,28 +36,10 @@ class HomeController extends GetxController {
   void removeTree(String key) => userTree.remove(key);
   void clearTree() => userTree.clear();
 
-  void createSnapshot(String title, String home, List<FileObject> selectedItems) {
-  final id = generateTimestamp();
+  void createSnapshot(String title, String homePath, List<FileObject> selectedItems) {
+    final id = generateTimestamp();
 
-  final snapshot = Snapshot(
-      id: id,
-      title: title,
-      home: home,
-      items: selectedItems
-          .map(
-            (item) => {
-              'type': item is FolderItem ? 'folder' : 'file',
-              'name': item.name,
-              'path': item.path,
-              'created': item.created.toIso8601String(),
-              'modified': item.modified.toIso8601String(),
-              if (item is FileItem) 'size': item.size,
-              if (item is FileItem) 'extension': item.extension,
-              if (item is FolderItem) 'itemCount': item.itemCount,
-            },
-          )
-          .toList(),
-    );
+    final snapshot = Snapshot(id: id, title: title, home: homePath, items: selectedItems);
 
     snapshots[id] = snapshot;
   }
@@ -228,46 +210,25 @@ class ViewController extends GetxController {
   }
 
   Future<void> saveSelectedItems() async {
-    // Get the currently selected items
-    final selected = viewContents
-        .where((item) => item.isSelected.value && item.name != '..')
-        .map(
-          (item) => {
-            'type': item is FolderItem ? 'folder' : 'file',
-            'name': item.name,
-            'path': item.path,
-            'created': item.created.toIso8601String(),
-            'modified': item.modified.toIso8601String(),
-          },
-        )
-        .toList();
+    final selected = viewContents.where((item) => item.isSelected.value && item.name != '..').toList();
 
     if (selected.isEmpty) {
       home.showDialog('Target', 'Select at least one file or folder');
       return;
     }
 
-    // clear previous selections and set new selections
-    home.userSettings['selection'] = selected;
-
-    // update the user tree with a new timestamp key
+    home.userSettings['selection'] = selected.map((e) => e.toJson()).toList();
     final timestampKey = 'game_snapshot_${home.generateTimestamp()}';
-    home.userTree[timestampKey] = selected;
+    home.userTree[timestampKey] = selected.map((e) => e.toJson()).toList();
 
-    // update settings in the stream
     home.userSettings['home'] = viewLocation;
     await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
-    await stream.updateSettings(stream.settingsFilePath, 'selection', selected);
+    await stream.updateSettings(stream.settingsFilePath, 'selection', selected.map((e) => e.toJson()).toList());
 
-
-    // add a snapshot with selected items
-    // preserve type for watched items
-    
-    // add title = timestampKey, home = viewLocation, items = selected
-    // home.createSnapshot(timestampKey, viewLocation, selected);
+    // typed snapshot
+    home.createSnapshot(timestampKey, viewLocation, selected);
 
     home.showDialog('Target', 'Saved ${selected.length} items');
-  
   }
 
 

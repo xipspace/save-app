@@ -6,6 +6,7 @@ A toolbox for snapshot game progress and counter autosave system or save slot li
 
 0.2 adds archive process<br>
 0.3 separate explorer from user tracks<br>
+0.4 typed snapshots<br>
 
 to do:
 1. track multiple locations > foundations done
