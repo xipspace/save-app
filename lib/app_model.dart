@@ -7,12 +7,7 @@ abstract class FileObject {
   final DateTime modified;
   final RxBool isSelected = false.obs;
 
-  FileObject({
-    required this.name,
-    required this.path,
-    required this.created,
-    required this.modified,
-  });
+  FileObject({required this.name, required this.path, required this.created, required this.modified});
 
   String get identitySignature => '$path|$created';
 
@@ -97,11 +92,24 @@ class Snapshot {
   String home;
   List<FileObject> items;
 
-  Snapshot({required this.id, required this.title, String? name, String? storage, required this.home, required this.items})
-    : name = name ?? 'game_snapshot',
-      storage = storage ?? home;
+  Snapshot({
+    required this.id,
+    required this.title,
+    String? name,
+    String? storage,
+    required this.home,
+    required this.items,
+  }) : name = name ?? 'game_snapshot',
+       storage = storage ?? home;
 
-  Map<String, dynamic> toJson() => {'id': id, 'title': title, 'name': name, 'storage': storage, 'home': home, 'items': items.map((e) => e.toJson()).toList()};
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'name': name,
+    'storage': storage,
+    'home': home,
+    'items': items.map((e) => e.toJson()).toList(),
+  };
 
   factory Snapshot.fromJson(Map<String, dynamic> json) {
     return Snapshot(

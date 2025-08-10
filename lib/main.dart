@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'app_controller.dart';
 import 'app_model.dart';
 
-enum ActionType { home, refresh, create, restore }
+enum ActionType { home, refresh, add, restore }
 
 void main() => runApp(const MainApp());
 
@@ -16,10 +16,7 @@ class MainApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'saveApp',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-      ),
+      theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: Colors.green)),
       initialRoute: '/',
       initialBinding: AppBindings(),
       home: const SafeArea(child: HomeScreen()),
@@ -57,19 +54,15 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Obx(() => Text(home.msg.value)),
                 Obx(() => Text(home.timeStamp.value)),
+
                 // const SizedBox(height: 20),
                 // Obx(() => Text(home.userSettings.toString())),
                 //const SizedBox(height: 20),
-
                 const SizedBox(height: 20),
 
-                // game needs to have a default place to archive (home) and custom
                 // be able to edit targets of a current snapshot
-                // add custom prefix within object model to be used in the archive process
                 // revert from a specific archive or the last one
                 // save and restore triggered by global HK and interval
-                
-
                 Obx(() {
                   final entries = home.snapshots.entries.toList();
 
@@ -96,36 +89,46 @@ class HomeScreen extends StatelessWidget {
                                         children: [
                                           Text(snapshot.title),
                                           const Spacer(),
-                                          // TODO > restore last archive or specific point of time will needs tracking
                                           Row(
                                             children: [
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.add),
-                                                onPressed: () {
-                                                  archive.compressTarget(snapshot);
-                                                  home.setStamp();
-                                                },
+                                              Tooltip(
+                                                message: 'compress',
+                                                child: IconButton(
+                                                  iconSize: 18,
+                                                  icon: const Icon(Icons.add),
+                                                  onPressed: () {
+                                                    archive.compressTarget(snapshot);
+                                                    home.setStamp();
+                                                  },
+                                                ),
                                               ),
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.replay),
-                                                onPressed: () {
-                                                  // home.restoreSnapshot(snapshotId);
-                                                },
+                                              // TODO > restore last archive or specific point of time will needs tracking
+                                              Tooltip(
+                                                message: 'restore',
+                                                child: IconButton(
+                                                  iconSize: 18,
+                                                  icon: const Icon(Icons.replay),
+                                                  onPressed: () {
+                                                    // home.restoreSnapshot(snapshotId);
+                                                  },
+                                                ),
                                               ),
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.edit_note),
-                                                onPressed: () {
-                                                  // hook up rename logic here if needed
-                                                },
+                                              Tooltip(
+                                                message: 'edit',
+                                                child: IconButton(
+                                                  iconSize: 18,
+                                                  icon: const Icon(Icons.edit_note),
+                                                  onPressed: () => home.showDialog('title', 'content'),
+                                                ),
                                               ),
-                                              IconButton(
-                                                iconSize: 18,
-                                                icon: const Icon(Icons.close),
-                                                onPressed: () => home.snapshots.remove(snapshotId),
-                                              ),
+                                              Tooltip(
+                                                message: 'delete',
+                                                child: IconButton(
+                                                  iconSize: 18,
+                                                  icon: const Icon(Icons.close),
+                                                  onPressed: () => home.snapshots.remove(snapshotId),
+                                                ),
+                                              )
                                             ],
                                           ),
                                         ],
@@ -139,14 +142,17 @@ class HomeScreen extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      
                                       Text('id: $snapshotId'),
+                                      Text('name: ${snapshot.name}'),
+                                      Text('storage: ${snapshot.storage}'),
                                       Text('home: ${snapshot.home}'),
                                       Text('items: ${snapshot.items.length}'),
-                                      
+
                                       const SizedBox(height: 5),
 
-                                      ...snapshot.items.map((item) => Text(' item: ${item.path}', style: TextStyle(fontSize: 12))),
+                                      ...snapshot.items.map(
+                                        (item) => Text(' item: ${item.path}', style: TextStyle(fontSize: 12)),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -177,8 +183,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-
-
 class ExplorerScreen extends StatelessWidget {
   const ExplorerScreen({super.key});
 
@@ -205,8 +209,7 @@ class ExplorerScreen extends StatelessWidget {
       ActionType.refresh: () async {
         await view.readLocation();
       },
-      // TODO > abstract a clear view for new usage
-      ActionType.create: () async {
+      ActionType.add: () async {
         final currentFolder = view.viewLocation;
         await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
         await view.saveSelectedItems();
@@ -228,7 +231,7 @@ class ExplorerScreen extends StatelessWidget {
 
               Container(
                 alignment: Alignment.center,
-                constraints: const BoxConstraints(maxWidth: 300),
+                constraints: const BoxConstraints(maxWidth: 500),
                 child: Wrap(
                   // spacing: 5,
                   // runSpacing: 5,
@@ -263,7 +266,6 @@ class ExplorerScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              
               // TODO > disk selector sync with the current drive from viewlocation
               Obx(() {
                 final disks = view.availableDisks;
@@ -273,7 +275,10 @@ class ExplorerScreen extends StatelessWidget {
                     : DropdownButtonHideUnderline(
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
-                          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: DropdownButton<String>(
                             value: disks.contains(view.viewLocation) ? view.viewLocation : disks.first,
                             dropdownColor: Colors.green.shade50,
@@ -315,7 +320,9 @@ class ExplorerScreen extends StatelessWidget {
                             itemCount: items.length,
                             itemBuilder: (context, index) {
                               final item = items[index];
-                              final displayName = item is FolderItem && !item.name.contains(':') ? '/${item.name}' : item.name;
+                              final displayName = item is FolderItem && !item.name.contains(':')
+                                  ? '/${item.name}'
+                                  : item.name;
 
                               return Material(
                                 color: Colors.transparent,
@@ -329,10 +336,17 @@ class ExplorerScreen extends StatelessWidget {
                                   child: ListTile(
                                     dense: true,
                                     title: Text(displayName, style: const TextStyle(fontSize: 14)),
-                                    subtitle: item.name != '..' ? Text('created: ${item.created}\nmodified: ${item.modified}') : null,
+                                    subtitle: item.name != '..'
+                                        ? Text('created: ${item.created}\nmodified: ${item.modified}')
+                                        : null,
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                     trailing: item.name != '..'
-                                        ? Obx(() => Checkbox(value: item.isSelected.value, onChanged: (val) => item.isSelected.value = val ?? false))
+                                        ? Obx(
+                                            () => Checkbox(
+                                              value: item.isSelected.value,
+                                              onChanged: (val) => item.isSelected.value = val ?? false,
+                                            ),
+                                          )
                                         : null,
                                   ),
                                 ),
@@ -343,7 +357,6 @@ class ExplorerScreen extends StatelessWidget {
                 ),
               ),
 
-
               const SizedBox(height: 20),
             ],
           ),
@@ -352,8 +365,6 @@ class ExplorerScreen extends StatelessWidget {
     );
   }
 }
-
-
 
 class UserScreen extends StatelessWidget {
   const UserScreen({super.key});

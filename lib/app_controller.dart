@@ -30,10 +30,23 @@ class HomeController extends GetxController {
 
   RxMap<String, Snapshot> snapshots = <String, Snapshot>{}.obs;
 
-  void createSnapshot(String title, String homePath, List<FileObject> selectedItems, {String? customName, String? customStorage}) {
+  void createSnapshot(
+    String title,
+    String homePath,
+    List<FileObject> selectedItems, {
+    String? customName,
+    String? customStorage,
+  }) {
     final id = generateTimestamp();
 
-    final snapshot = Snapshot(id: id, title: title, name: customName, storage: customStorage, home: homePath, items: selectedItems);
+    final snapshot = Snapshot(
+      id: id,
+      title: title,
+      name: customName,
+      storage: customStorage,
+      home: homePath,
+      items: selectedItems,
+    );
 
     snapshots[id] = snapshot;
   }
@@ -47,8 +60,10 @@ class HomeController extends GetxController {
 
   String generateTimestamp() {
     final now = DateTime.now();
-    final date = '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-    final time = '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    final date =
+        '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final time =
+        '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
     final millis = now.millisecond.toString().padLeft(3, '0');
     return '${date}_$time$millis';
   }
@@ -74,8 +89,6 @@ class HomeController extends GetxController {
     );
   }
 }
-
-
 
 class ViewController extends GetxController {
   final HomeController home = Get.find<HomeController>();
@@ -123,7 +136,9 @@ class ViewController extends GetxController {
     // load the location from userSettings.home or from the default location as indicated at onReady
     // it should populate viewContents with items from the model
     // use model flags for content filtering
-    final dir = Directory(viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}');
+    final dir = Directory(
+      viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}',
+    );
 
     if (!await dir.exists()) {
       home.showDialog('Error', 'directory does not exist:\n$viewLocation');
@@ -193,8 +208,6 @@ class ViewController extends GetxController {
     }
 
     viewContents.value = tempContents;
-
-
   }
 
   void sortNameAsc() {
@@ -221,11 +234,7 @@ class ViewController extends GetxController {
 
     home.showDialog('Target', 'Saved ${selected.length} items');
   }
-
-
 }
-
-
 
 class StreamController extends GetxController {
   final HomeController home = Get.find<HomeController>();
@@ -312,8 +321,6 @@ class StreamController extends GetxController {
   }
 }
 
-
-
 class ArchiveController extends GetxController {
   final HomeController home = Get.find<HomeController>();
   final ViewController view = Get.find<ViewController>();
@@ -392,8 +399,6 @@ class ArchiveController extends GetxController {
   }
 
   Future<void> extractTarget() async {
-    
     // TODO > needs to able to overwrite all files from target
-    
   }
 }
