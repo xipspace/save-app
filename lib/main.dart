@@ -93,15 +93,15 @@ class HomeScreen extends StatelessWidget {
                                                 child: IconButton(
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.add),
-                                                  onPressed: () {
+                                                  onPressed: () async {
                                                     home.setMsg('saved');
                                                     home.setStamp();
-                                                    // TODO > avoid race condition
-                                                    archive.compressTarget(snapshot);
+                                                    await archive.compressTarget(snapshot);
                                                   },
                                                 ),
                                               ),
                                               // TODO > read storage and identify any container and target last as default
+                                              // read container contents
                                               Tooltip(
                                                 message: 'restore',
                                                 child: IconButton(
@@ -118,7 +118,7 @@ class HomeScreen extends StatelessWidget {
                                                 child: IconButton(
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.edit_note),
-                                                  onPressed: () => home.showDialog('title', 'content'),
+                                                  onPressed: () => home.showEdit(snapshot),
                                                 ),
                                               ),
                                               Tooltip(
@@ -143,7 +143,7 @@ class HomeScreen extends StatelessWidget {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text('id: $snapshotId'),
-                                      Text('name: ${snapshot.name}'),
+                                      Text('filename: ${snapshot.name}'),
                                       Text('storage: ${snapshot.storage}'),
                                       Text('home: ${snapshot.home}'),
                                       Text('items: ${snapshot.items.length}'),
@@ -199,6 +199,7 @@ class ExplorerScreen extends StatelessWidget {
         final savedHome = home.userSettings['home'];
         if (savedHome is String && savedHome.isNotEmpty) {
           view.viewLocation = savedHome;
+          view.currentDisk.value = savedHome.substring(0, 3);
           await view.readLocation();
         } else {
           home.showDialog('Home Error', 'No valid home path set.');

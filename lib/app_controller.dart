@@ -86,6 +86,41 @@ class HomeController extends GetxController {
       ),
     );
   }
+
+  void showEdit(Snapshot snapshot) {
+    final originalId = snapshot.id;
+    Get.dialog(
+      AlertDialog(
+        title: Text('edit'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(labelText: 'title'),
+              onChanged: (value) => snapshot.title = value,
+              controller: TextEditingController(text: snapshot.title),
+            ),
+            TextField(
+              decoration: InputDecoration(labelText: 'name'),
+              onChanged: (value) => snapshot.name = value,
+              controller: TextEditingController(text: snapshot.name),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              snapshots[originalId] = snapshot;
+              snapshots.refresh();
+              Get.back();
+            },
+            child: const Column(children: [SizedBox(width: 50), Text('OK')]),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 class ViewController extends GetxController {
@@ -103,6 +138,7 @@ class ViewController extends GetxController {
   Future<void> initView() async {
     final savedLocation = home.userSettings['home'];
     viewLocation = (savedLocation is String && savedLocation.isNotEmpty) ? savedLocation : defaultLocation;
+    currentDisk.value = viewLocation.substring(0, 3);
 
     await loadDisks();
     await readLocation();
@@ -321,6 +357,8 @@ class StreamController extends GetxController {
     home.userSettings.remove(key);
     await createSettings(filePath);
   }
+
+  
 }
 
 class ArchiveController extends GetxController {
