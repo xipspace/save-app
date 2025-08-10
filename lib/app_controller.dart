@@ -60,10 +60,8 @@ class HomeController extends GetxController {
 
   String generateTimestamp() {
     final now = DateTime.now();
-    final date =
-        '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-    final time =
-        '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    final date = '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final time = '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
     final millis = now.millisecond.toString().padLeft(3, '0');
     return '${date}_$time$millis';
   }
@@ -94,7 +92,9 @@ class ViewController extends GetxController {
   final HomeController home = Get.find<HomeController>();
   final StreamController stream = Get.find<StreamController>();
 
+  
   String viewLocation = '';
+  RxString currentDisk = ''.obs;
   RxList<FileObject> viewContents = <FileObject>[].obs;
   final String defaultLocation = Directory.current.path;
 
@@ -127,18 +127,19 @@ class ViewController extends GetxController {
   }
 
   // change disk and load its contents
-  Future<void> changeDisk(String diskPath) async {
+  void changeDisk(String diskPath) async {
     viewLocation = diskPath;
+    currentDisk.value = diskPath.substring(0, 3);
     await readLocation();
   }
+
+  
 
   Future<void> readLocation() async {
     // load the location from userSettings.home or from the default location as indicated at onReady
     // it should populate viewContents with items from the model
     // use model flags for content filtering
-    final dir = Directory(
-      viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}',
-    );
+    final dir = Directory(viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}');
 
     if (!await dir.exists()) {
       home.showDialog('Error', 'directory does not exist:\n$viewLocation');
@@ -287,6 +288,7 @@ class StreamController extends GetxController {
     }
   }
 
+  // TODO > abstract operations to persist different serializations
   Future<void> createSettings(String filePath) async {
     final file = File(filePath);
     final tempFile = File('$filePath.tmp');
@@ -325,15 +327,12 @@ class ArchiveController extends GetxController {
   final HomeController home = Get.find<HomeController>();
   final ViewController view = Get.find<ViewController>();
 
-  // grab the path from snapshot storage
-  // put archive at snapshot home
-
   Future<void> compressTarget(Snapshot snapshot) async {
     final List targets = snapshot.items.map((e) => e.toJson()).toList();
-    final String homePath = snapshot.storage;
+    final String storagePath = snapshot.storage;
 
-    if (targets.isEmpty || homePath.isEmpty) {
-      home.showDialog('Error', 'No valid target or home path.');
+    if (targets.isEmpty || storagePath.isEmpty) {
+      home.showDialog('Error', 'No valid target or storage path.');
       return;
     }
 
@@ -381,7 +380,7 @@ class ArchiveController extends GetxController {
       }
 
       final zipName = '${snapshot.id}_${snapshot.name}.zip';
-      final zipPath = '$homePath${Platform.pathSeparator}$zipName';
+      final zipPath = '$storagePath${Platform.pathSeparator}$zipName';
 
       final zipBytes = ZipEncoder().encode(archive);
       await File(zipPath).writeAsBytes(zipBytes);

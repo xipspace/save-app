@@ -55,9 +55,6 @@ class HomeScreen extends StatelessWidget {
                 Obx(() => Text(home.msg.value)),
                 Obx(() => Text(home.timeStamp.value)),
 
-                // const SizedBox(height: 20),
-                // Obx(() => Text(home.userSettings.toString())),
-                //const SizedBox(height: 20),
                 const SizedBox(height: 20),
 
                 // be able to edit targets of a current snapshot
@@ -97,19 +94,22 @@ class HomeScreen extends StatelessWidget {
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.add),
                                                   onPressed: () {
-                                                    archive.compressTarget(snapshot);
+                                                    home.setMsg('saved');
                                                     home.setStamp();
+                                                    // TODO > avoid race condition
+                                                    archive.compressTarget(snapshot);
                                                   },
                                                 ),
                                               ),
-                                              // TODO > restore last archive or specific point of time will needs tracking
+                                              // TODO > read storage and identify any container and target last as default
                                               Tooltip(
                                                 message: 'restore',
                                                 child: IconButton(
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.replay),
                                                   onPressed: () {
-                                                    // home.restoreSnapshot(snapshotId);
+                                                    // and pass the home of the targets to reverse
+                                                    // archive.extractTarget();
                                                   },
                                                 ),
                                               ),
@@ -203,8 +203,6 @@ class ExplorerScreen extends StatelessWidget {
         } else {
           home.showDialog('Home Error', 'No valid home path set.');
         }
-        // home.showDialog('Home', home.userSettings['home'].toString());
-        // home.showDialog('Tree', home.userSettings['tree'].toString());
       },
       ActionType.refresh: () async {
         await view.readLocation();
@@ -213,6 +211,11 @@ class ExplorerScreen extends StatelessWidget {
         final currentFolder = view.viewLocation;
         await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
         await view.saveSelectedItems();
+        for (var item in view.viewContents) {
+          item.isSelected.value = false;
+        }
+        home.userSettings['selection'] = [];
+        await stream.updateSettings(stream.settingsFilePath, 'selection', []);
       },
     };
 
@@ -266,7 +269,6 @@ class ExplorerScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // TODO > disk selector sync with the current drive from viewlocation
               Obx(() {
                 final disks = view.availableDisks;
 
@@ -275,12 +277,9 @@ class ExplorerScreen extends StatelessWidget {
                     : DropdownButtonHideUnderline(
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
                           child: DropdownButton<String>(
-                            value: disks.contains(view.viewLocation) ? view.viewLocation : disks.first,
+                            value: disks.contains(view.currentDisk.value) ? view.currentDisk.value : disks.first,
                             dropdownColor: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(12),
                             style: const TextStyle(fontSize: 16, color: Colors.black),

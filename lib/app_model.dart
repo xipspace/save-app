@@ -39,14 +39,7 @@ class FileItem extends FileObject {
   final int size;
   final String extension;
 
-  FileItem({
-    required super.name,
-    required super.path,
-    required super.created,
-    required super.modified,
-    required this.size,
-    required this.extension,
-  });
+  FileItem({required super.name, required super.path, required super.created, required super.modified, required this.size, required this.extension});
 
   @override
   Map<String, dynamic> toJson() => {
@@ -64,13 +57,7 @@ class FileItem extends FileObject {
 class FolderItem extends FileObject {
   final int itemCount;
 
-  FolderItem({
-    required super.name,
-    required super.path,
-    required super.created,
-    required super.modified,
-    required this.itemCount,
-  });
+  FolderItem({required super.name, required super.path, required super.created, required super.modified, required this.itemCount});
 
   @override
   Map<String, dynamic> toJson() => {
@@ -92,15 +79,9 @@ class Snapshot {
   String home;
   List<FileObject> items;
 
-  Snapshot({
-    required this.id,
-    required this.title,
-    String? name,
-    String? storage,
-    required this.home,
-    required this.items,
-  }) : name = name ?? 'game_snapshot',
-       storage = storage ?? home;
+  Snapshot({required this.id, required this.title, String? name, String? storage, required this.home, required this.items})
+    : name = name ?? 'game_snapshot',
+      storage = storage ?? home;
 
   Map<String, dynamic> toJson() => {
     'id': id,
