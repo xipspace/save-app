@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'app_controller.dart';
 import 'app_model.dart';
 
-enum ActionType { home, refresh, add, restore, compress, extract }
+enum ActionType { home, refresh, create, restore }
 
 void main() => runApp(const MainApp());
 
@@ -33,7 +33,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final home = Get.find<HomeController>();
-    // final view = Get.find<ViewController>();
+    final view = Get.find<ViewController>();
     // final stream = Get.find<StreamController>();
     final archive = Get.find<ArchiveController>();
 
@@ -51,7 +51,7 @@ class HomeScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 1024),
+            constraints: const BoxConstraints(maxWidth: 960),
             child: Column(
               children: [
                 const SizedBox(height: 20),
@@ -96,16 +96,14 @@ class HomeScreen extends StatelessWidget {
                                         children: [
                                           Text(snapshot.title),
                                           const Spacer(),
+                                          // TODO > restore last archive or specific point of time will needs tracking
                                           Row(
                                             children: [
                                               IconButton(
                                                 iconSize: 18,
                                                 icon: const Icon(Icons.add),
                                                 onPressed: () {
-                                                  archive.compressTarget(
-                                                    // homePath: snapshot.home,
-                                                    // targets: snapshot.items.map((f) => f.path).toList(),
-                                                  );
+                                                  archive.compressTarget(snapshot);
                                                   home.setStamp();
                                                 },
                                               ),
@@ -167,7 +165,13 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () => Get.to(() => ExplorerScreen()),
+        onPressed: () async {
+          // abstract logic to handle initialization using home
+          // find place to expand both new additions (without a home) and edit snapshot items when going to explorer
+          // TODO > clear view for a new addition and read selected target to draw view properly for edition
+          view.initView();
+          Get.to(() => ExplorerScreen());
+        },
       ),
     );
   }
@@ -183,7 +187,7 @@ class ExplorerScreen extends StatelessWidget {
     final home = Get.find<HomeController>();
     final view = Get.find<ViewController>();
     final stream = Get.find<StreamController>();
-    final archive = Get.find<ArchiveController>();
+    // final archive = Get.find<ArchiveController>();
 
     final Map<ActionType, VoidCallback> actionMap = {
       ActionType.home: () async {
@@ -201,16 +205,11 @@ class ExplorerScreen extends StatelessWidget {
       ActionType.refresh: () async {
         await view.readLocation();
       },
-      ActionType.add: () async {
+      // TODO > abstract a clear view for new usage
+      ActionType.create: () async {
         final currentFolder = view.viewLocation;
         await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
         await view.saveSelectedItems();
-      },
-      ActionType.compress: () async {
-        await archive.compressTarget();
-      },
-      ActionType.extract: () async {
-        await archive.extractTarget();
       },
     };
 
@@ -264,21 +263,32 @@ class ExplorerScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
+              
+              // TODO > disk selector sync with the current drive from viewlocation
               Obx(() {
                 final disks = view.availableDisks;
 
                 return disks.isEmpty
                     ? const Text('No disks found')
-                    : DropdownButton<String>(
-                        value: disks.contains(view.viewLocation) ? view.viewLocation : disks.first,
-                        items: disks.map((disk) {
-                          return DropdownMenuItem(value: disk, child: Text(disk));
-                        }).toList(),
-                        onChanged: (newDisk) {
-                          if (newDisk != null) {
-                            view.changeDisk(newDisk);
-                          }
-                        },
+                    : DropdownButtonHideUnderline(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
+                          child: DropdownButton<String>(
+                            value: disks.contains(view.viewLocation) ? view.viewLocation : disks.first,
+                            dropdownColor: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            style: const TextStyle(fontSize: 16, color: Colors.black),
+                            items: disks.map((disk) {
+                              return DropdownMenuItem(value: disk, child: Text(disk));
+                            }).toList(),
+                            onChanged: (newDisk) {
+                              if (newDisk != null) {
+                                view.changeDisk(newDisk);
+                              }
+                            },
+                          ),
+                        ),
                       );
               }),
 
@@ -332,6 +342,9 @@ class ExplorerScreen extends StatelessWidget {
                   }),
                 ),
               ),
+
+
+              const SizedBox(height: 20),
             ],
           ),
         ),

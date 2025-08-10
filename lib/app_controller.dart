@@ -23,16 +23,17 @@ class HomeController extends GetxController {
 
   RxMap<String, dynamic> userSettings = <String, dynamic>{
     'settings': '', // settings.json location
+    // home is now dependant of snapshot
     'home': '', // init location
     'selection': {}, // collection of objects to operate
   }.obs;
 
   RxMap<String, Snapshot> snapshots = <String, Snapshot>{}.obs;
 
-  void createSnapshot(String title, String homePath, List<FileObject> selectedItems) {
+  void createSnapshot(String title, String homePath, List<FileObject> selectedItems, {String? customName, String? customStorage}) {
     final id = generateTimestamp();
 
-    final snapshot = Snapshot(id: id, title: title, home: homePath, items: selectedItems);
+    final snapshot = Snapshot(id: id, title: title, name: customName, storage: customStorage, home: homePath, items: selectedItems);
 
     snapshots[id] = snapshot;
   }
@@ -86,14 +87,12 @@ class ViewController extends GetxController {
 
   RxList<String> availableDisks = <String>[].obs;
 
-  @override
-  void onReady() {
-    super.onReady();
+  Future<void> initView() async {
     final savedLocation = home.userSettings['home'];
     viewLocation = (savedLocation is String && savedLocation.isNotEmpty) ? savedLocation : defaultLocation;
 
-    loadDisks();
-    readLocation();
+    await loadDisks();
+    await readLocation();
   }
 
   // get disks for Windows
@@ -121,7 +120,7 @@ class ViewController extends GetxController {
   }
 
   Future<void> readLocation() async {
-    // read location should load the location from userSettings.home or from the default location as indicated at onReady
+    // load the location from userSettings.home or from the default location as indicated at onReady
     // it should populate viewContents with items from the model
     // use model flags for content filtering
     final dir = Directory(viewLocation.endsWith(Platform.pathSeparator) ? viewLocation : '$viewLocation${Platform.pathSeparator}');
@@ -319,13 +318,12 @@ class ArchiveController extends GetxController {
   final HomeController home = Get.find<HomeController>();
   final ViewController view = Get.find<ViewController>();
 
-  // grab the path from snapshot to compress when calling from the card
-  // put at snapshot home
-  // add prefix input from user
+  // grab the path from snapshot storage
+  // put archive at snapshot home
 
-  Future<void> compressTarget() async {
-    final List targets = home.userSettings['selection'] ?? [];
-    final String homePath = home.userSettings['home'] ?? '';
+  Future<void> compressTarget(Snapshot snapshot) async {
+    final List targets = snapshot.items.map((e) => e.toJson()).toList();
+    final String homePath = snapshot.storage;
 
     if (targets.isEmpty || homePath.isEmpty) {
       home.showDialog('Error', 'No valid target or home path.');
@@ -340,13 +338,12 @@ class ArchiveController extends GetxController {
     try {
       for (var item in targets) {
         final type = item['type'];
-        // final name = item['name'];
         final path = item['path'];
 
         final entity = FileSystemEntity.typeSync(path);
         if (entity == FileSystemEntityType.notFound) continue;
 
-        final basePath = Directory(homePath).path;
+        final basePath = Directory(snapshot.home).path;
         final relativePath = path.replaceFirst('$basePath${Platform.pathSeparator}', '');
 
         if (type == 'file' && File(path).existsSync()) {
@@ -376,18 +373,11 @@ class ArchiveController extends GetxController {
         }
       }
 
-      final timestamp = home.generateTimestamp();
-
-      // make prefix custom
-      final zipName = 'archive_$timestamp.zip';
+      final zipName = '${snapshot.id}_${snapshot.name}.zip';
       final zipPath = '$homePath${Platform.pathSeparator}$zipName';
 
       final zipBytes = ZipEncoder().encode(archive);
       await File(zipPath).writeAsBytes(zipBytes);
-
-      if (homePath == view.viewLocation) {
-        await view.readLocation();
-      }
 
       home.showDialog(
         'Compression Complete',
@@ -399,12 +389,11 @@ class ArchiveController extends GetxController {
     } catch (e) {
       home.showDialog('Error', 'Compression failed: $e');
     }
-
   }
 
   Future<void> extractTarget() async {
     
-    // needs to able to overwrite all files from target
+    // TODO > needs to able to overwrite all files from target
     
   }
 }

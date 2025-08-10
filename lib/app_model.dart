@@ -92,22 +92,23 @@ class FolderItem extends FileObject {
 class Snapshot {
   final String id;
   String title;
+  String name;
+  String storage;
   String home;
   List<FileObject> items;
 
-  Snapshot({required this.id, required this.title, required this.home, required this.items});
+  Snapshot({required this.id, required this.title, String? name, String? storage, required this.home, required this.items})
+    : name = name ?? 'game_snapshot',
+      storage = storage ?? home;
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'home': home,
-    'items': items.map((e) => e.toJson()).toList(),
-  };
+  Map<String, dynamic> toJson() => {'id': id, 'title': title, 'name': name, 'storage': storage, 'home': home, 'items': items.map((e) => e.toJson()).toList()};
 
   factory Snapshot.fromJson(Map<String, dynamic> json) {
     return Snapshot(
       id: json['id'],
       title: json['title'],
+      name: json['name'],
+      storage: json['storage'],
       home: json['home'],
       items: (json['items'] as List).map((e) => FileObject.fromJson(e)).toList(),
     );
