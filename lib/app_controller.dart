@@ -27,14 +27,7 @@ class HomeController extends GetxController {
     'selection': {}, // collection of objects to operate
   }.obs;
 
-  // convert to model object
-  RxMap<String, dynamic> userTree = <String, dynamic>{}.obs;
   RxMap<String, Snapshot> snapshots = <String, Snapshot>{}.obs;
-
-  // userTree methods
-  void setTree(String key, dynamic value) => userTree[key] = value;
-  void removeTree(String key) => userTree.remove(key);
-  void clearTree() => userTree.clear();
 
   void createSnapshot(String title, String homePath, List<FileObject> selectedItems) {
     final id = generateTimestamp();
@@ -218,8 +211,7 @@ class ViewController extends GetxController {
     }
 
     home.userSettings['selection'] = selected.map((e) => e.toJson()).toList();
-    final timestampKey = 'game_snapshot_${home.generateTimestamp()}';
-    home.userTree[timestampKey] = selected.map((e) => e.toJson()).toList();
+    final timestampKey = '${home.generateTimestamp()}_game_snapshot';
 
     home.userSettings['home'] = viewLocation;
     await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);

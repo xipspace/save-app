@@ -106,6 +106,7 @@ class HomeScreen extends StatelessWidget {
                                                     // homePath: snapshot.home,
                                                     // targets: snapshot.items.map((f) => f.path).toList(),
                                                   );
+                                                  home.setStamp();
                                                 },
                                               ),
                                               IconButton(
@@ -171,6 +172,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+
 
 class ExplorerScreen extends StatelessWidget {
   const ExplorerScreen({super.key});
@@ -261,7 +264,6 @@ class ExplorerScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-
               Obx(() {
                 final disks = view.availableDisks;
 
@@ -303,11 +305,7 @@ class ExplorerScreen extends StatelessWidget {
                             itemCount: items.length,
                             itemBuilder: (context, index) {
                               final item = items[index];
-                              final isDrive =
-                                  item is FolderItem && RegExp(r'^[A-Z]:\\$', caseSensitive: false).hasMatch(item.name);
-                              final displayName = item is FolderItem && !item.name.contains(':')
-                                  ? '/${item.name}'
-                                  : item.name;
+                              final displayName = item is FolderItem && !item.name.contains(':') ? '/${item.name}' : item.name;
 
                               return Material(
                                 color: Colors.transparent,
@@ -321,17 +319,10 @@ class ExplorerScreen extends StatelessWidget {
                                   child: ListTile(
                                     dense: true,
                                     title: Text(displayName, style: const TextStyle(fontSize: 14)),
-                                    subtitle: (!isDrive && item.name != '..')
-                                        ? Text('created: ${item.created}\nmodified: ${item.modified}')
-                                        : null,
+                                    subtitle: item.name != '..' ? Text('created: ${item.created}\nmodified: ${item.modified}') : null,
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    trailing: (!isDrive && item.name != '..')
-                                        ? Obx(
-                                            () => Checkbox(
-                                              value: item.isSelected.value,
-                                              onChanged: (val) => item.isSelected.value = val ?? false,
-                                            ),
-                                          )
+                                    trailing: item.name != '..'
+                                        ? Obx(() => Checkbox(value: item.isSelected.value, onChanged: (val) => item.isSelected.value = val ?? false))
                                         : null,
                                   ),
                                 ),

@@ -7,16 +7,11 @@ abstract class FileObject {
   final DateTime modified;
   final RxBool isSelected = false.obs;
 
-  final bool isSpecial;
-  final bool isDrive;
-
   FileObject({
     required this.name,
     required this.path,
     required this.created,
     required this.modified,
-    this.isSpecial = false,
-    this.isDrive = false,
   });
 
   String get identitySignature => '$path|$created';
@@ -31,8 +26,6 @@ abstract class FileObject {
         created: DateTime.parse(json['created']),
         modified: DateTime.parse(json['modified']),
         itemCount: json['itemCount'] ?? 0,
-        isSpecial: json['isSpecial'] ?? false,
-        isDrive: json['isDrive'] ?? false,
       )..isSelected.value = json['isSelected'] ?? false;
     } else {
       return FileItem(
@@ -42,8 +35,6 @@ abstract class FileObject {
         modified: DateTime.parse(json['modified']),
         size: json['size'] ?? 0,
         extension: json['extension'] ?? '',
-        isSpecial: json['isSpecial'] ?? false,
-        isDrive: json['isDrive'] ?? false,
       )..isSelected.value = json['isSelected'] ?? false;
     }
   }
@@ -60,8 +51,6 @@ class FileItem extends FileObject {
     required super.modified,
     required this.size,
     required this.extension,
-    super.isSpecial = false,
-    super.isDrive = false,
   });
 
   @override
@@ -73,8 +62,6 @@ class FileItem extends FileObject {
     'modified': modified.toIso8601String(),
     'size': size,
     'extension': extension,
-    'isSpecial': isSpecial,
-    'isDrive': isDrive,
     'isSelected': isSelected.value,
   };
 }
@@ -88,8 +75,6 @@ class FolderItem extends FileObject {
     required super.created,
     required super.modified,
     required this.itemCount,
-    super.isSpecial = false,
-    super.isDrive = false,
   });
 
   @override
@@ -100,8 +85,6 @@ class FolderItem extends FileObject {
     'created': created.toIso8601String(),
     'modified': modified.toIso8601String(),
     'itemCount': itemCount,
-    'isSpecial': isSpecial,
-    'isDrive': isDrive,
     'isSelected': isSelected.value,
   };
 }
