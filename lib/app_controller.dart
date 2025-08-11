@@ -18,6 +18,7 @@ class AppBindings implements Bindings {
 }
 
 class HomeController extends GetxController {
+
   RxString msg = 'welcome'.obs;
   RxString timeStamp = 'time'.obs;
 
@@ -124,8 +125,8 @@ class HomeController extends GetxController {
 }
 
 class ViewController extends GetxController {
-  final HomeController home = Get.find<HomeController>();
-  final StreamController stream = Get.find<StreamController>();
+  final home = Get.find<HomeController>();
+  final stream = Get.find<StreamController>();
 
   
   String viewLocation = '';
@@ -274,10 +275,15 @@ class ViewController extends GetxController {
 }
 
 class StreamController extends GetxController {
-  final HomeController home = Get.find<HomeController>();
-
+  final home = Get.find<HomeController>();
+  
+  // define file paths
   String get settingsFilePath {
     return '${home.userSettings['settings']}${Platform.pathSeparator}settings.json';
+  }
+
+  String get snapshotsFilePath {
+    return '${home.userSettings['settings']}${Platform.pathSeparator}snapshots.json';
   }
 
   @override
@@ -286,7 +292,20 @@ class StreamController extends GetxController {
 
     final folderPath = _localAppData();
     home.userSettings['settings'] = folderPath;
-    await validateSettings(settingsFilePath);
+
+    // load settings
+    await validateJsonFile(settingsFilePath, home.userSettings);
+
+    // load snapshots
+    await validateJsonFile(snapshotsFilePath, home.snapshots);
+
+    ever(home.snapshots, (snapshots) {
+      saveSnapshots();
+    });
+  }
+
+  Future<void> saveSnapshots() async {
+    await createJsonFile(snapshotsFilePath, home.snapshots.map((key, value) => MapEntry(key, value.toJson())));
   }
 
   String _localAppData() {
@@ -295,6 +314,97 @@ class StreamController extends GetxController {
     return '$appDataPath${Platform.pathSeparator}$appFolder';
   }
 
+  // TODO > trace back default data
+  Future<void> validateJsonFile(String filePath, dynamic target) async {
+    final file = File(filePath);
+    try {
+      if (!await file.exists()) {
+        await createJsonFile(filePath, target);
+        return;
+      }
+
+      final contents = await file.readAsString();
+      if (contents.trim().isEmpty) {
+        await createJsonFile(filePath, target);
+        return;
+      }
+
+      final parsed = jsonDecode(contents);
+
+      if (target is RxMap && parsed is Map<String, dynamic>) {
+        target.clear();
+        target.addAll(parsed);
+      } else if (target is RxMap<String, Snapshot> && parsed is Map<String, dynamic>) {
+        target.clear();
+        parsed.forEach((key, value) {
+          try {
+            target[key] = Snapshot.fromJson(value);
+          } catch (e) {
+            print('Failed to parse snapshot $key: $e');
+            // Don't rethrow the exception here, let the target remain partially populated
+          }
+        });
+      } else {
+        throw const FormatException('Invalid JSON file format.');
+      }
+    } catch (e) {
+      print('Exception caught during validation of $filePath: $e');
+      // Only create a new file if it's not possible to parse the existing one
+      if (!await file.exists() || (await file.readAsString()).trim().isEmpty) {
+        await createJsonFile(filePath, target);
+      } else {
+        // If the file exists and has content, but parsing failed,
+        // you might want to handle this case differently, e.g., by logging the error or notifying the user
+        print('Failed to parse existing file, using it as is.');
+      }
+    }
+  }
+
+  Future<void> createJsonFile(String filePath, dynamic data) async {
+    final file = File(filePath);
+    final tempFile = File('$filePath.tmp');
+
+    try {
+      final dir = file.parent;
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      dynamic serializable = data;
+      if (data is RxMap<String, Snapshot>) {
+        serializable = {
+          for (var entry in data.entries) entry.key: entry.value.toJson()
+        };
+      }
+
+      await tempFile.writeAsString(
+        JsonEncoder.withIndent('  ').convert(serializable),
+        mode: FileMode.write,
+      );
+      await tempFile.rename(filePath);
+    } catch (e) {
+      home.showDialog('Write Error', 'failed to write file: $e');
+    }
+  }
+
+  Future<dynamic> readJsonKey(String filePath, Map<String, dynamic> targetMap, String key, [dynamic fallback]) async {
+    await validateJsonFile(filePath, targetMap);
+    return targetMap.containsKey(key) ? targetMap[key] : fallback;
+  }
+
+  Future<void> updateJsonKey(String filePath, Map<String, dynamic> targetMap, String key, dynamic value) async {
+    await validateJsonFile(filePath, targetMap);
+    targetMap[key] = value;
+    await createJsonFile(filePath, targetMap);
+  }
+
+  Future<void> deleteJsonKey(String filePath, Map<String, dynamic> targetMap, String key) async {
+    await validateJsonFile(filePath, targetMap);
+    targetMap.remove(key);
+    await createJsonFile(filePath, targetMap);
+  }
+
+  // legacy
   Future<void> validateSettings(String filePath) async {
     final file = File(filePath);
 
@@ -324,7 +434,6 @@ class StreamController extends GetxController {
     }
   }
 
-  // TODO > abstract operations to persist different serializations
   Future<void> createSettings(String filePath) async {
     final file = File(filePath);
     final tempFile = File('$filePath.tmp');
@@ -362,8 +471,8 @@ class StreamController extends GetxController {
 }
 
 class ArchiveController extends GetxController {
-  final HomeController home = Get.find<HomeController>();
-  final ViewController view = Get.find<ViewController>();
+  final home = Get.find<HomeController>();
+  final view = Get.find<ViewController>();
 
   Future<void> compressTarget(Snapshot snapshot) async {
     final List targets = snapshot.items.map((e) => e.toJson()).toList();

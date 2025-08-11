@@ -41,7 +41,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(icon: const Icon(Icons.dark_mode_outlined), onPressed: () {}),
           IconButton(icon: const Icon(Icons.person_outline), onPressed: () => Get.to(() => const UserScreen())),
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.more_vert), onPressed: () => home.showDialog('@xipspace', 'https://github.com/xipspace/save-app')),
           const SizedBox(width: 10),
         ],
       ),
@@ -94,7 +94,7 @@ class HomeScreen extends StatelessWidget {
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.add),
                                                   onPressed: () async {
-                                                    home.setMsg('saved');
+                                                    home.setMsg('saved ${snapshot.title}');
                                                     home.setStamp();
                                                     await archive.compressTarget(snapshot);
                                                   },
@@ -126,7 +126,11 @@ class HomeScreen extends StatelessWidget {
                                                 child: IconButton(
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.close),
-                                                  onPressed: () => home.snapshots.remove(snapshotId),
+                                                  onPressed: () {
+                                                    home.setStamp();
+                                                    home.setMsg('deleted ${snapshot.title}');
+                                                    home.snapshots.remove(snapshotId);
+                                                  },
                                                 ),
                                               )
                                             ],
@@ -150,9 +154,7 @@ class HomeScreen extends StatelessWidget {
 
                                       const SizedBox(height: 5),
 
-                                      ...snapshot.items.map(
-                                        (item) => Text(' item: ${item.path}', style: TextStyle(fontSize: 12)),
-                                      ),
+                                      // ...snapshot.items.map((item) => Text(' item: ${item.path}', style: TextStyle(fontSize: 12))),
                                     ],
                                   ),
                                 ),
@@ -264,9 +266,8 @@ class ExplorerScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              Obx(() => Text(home.userSettings['selection'].toString())),
+              // const SizedBox(height: 20),
+              // Obx(() => Text(home.userSettings['selection'].toString())),
 
               const SizedBox(height: 20),
 
@@ -297,7 +298,6 @@ class ExplorerScreen extends StatelessWidget {
                       );
               }),
 
-              // Obx(() => Text(home.userTree.toString())),
               const SizedBox(height: 20),
 
               Card(
@@ -401,7 +401,6 @@ class UserScreen extends StatelessWidget {
 
               Obx(() => Text(home.userSettings['selection'].toString())),
 
-              // Obx(() => Text(home.userTree.toString())),
               const SizedBox(height: 20),
             ],
           ),
