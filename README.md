@@ -1,7 +1,7 @@
 # Save Point Toolbox
 
 
-A toolbox for snapshot game progress and counter autosave system or save slot limits.
+A toolbox for snapshot game progress and counter autosave system and save slot limits.
 
 
 0.2 adds archive process<br>
@@ -11,8 +11,7 @@ A toolbox for snapshot game progress and counter autosave system or save slot li
 0.6 persist snapshots<br>
 
 to do:
-1. user collection methods > foundations done
-1. persist tracks > wip
+1. user collection methods > wip
 1. key bindings
 
 <br>

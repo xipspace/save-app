@@ -1,5 +1,5 @@
 name: save_point_app
-description: 'A Toolbox for snapshot game progress.'
+description: 'A toolbox for snapshot game progress and counter autosave system and save slot limits.'
 publish_to: 'none'
 version: 0.6.0
 

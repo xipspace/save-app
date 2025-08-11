@@ -31,10 +31,12 @@ class HomeController extends GetxController {
 
   RxMap<String, Snapshot> snapshots = <String, Snapshot>{}.obs;
 
-  void createSnapshot(String title, String homePath, List<FileObject> selectedItems, {String? customName, String? customStorage}) {
+  // TODO > default title can be generated here
+  void createSnapshot(String homePath, List<FileObject> selectedItems, {String? title, String? customName, String? customStorage}) {
     final id = generateTimestamp();
+    final snapshotTitle = title ?? '${id}_game_snapshot';
 
-    final snapshot = Snapshot(id: id, title: title, name: customName, storage: customStorage, home: homePath, items: selectedItems);
+    final snapshot = Snapshot(id: id, title: snapshotTitle, name: customName, storage: customStorage, home: homePath, items: selectedItems);
 
     snapshots[id] = snapshot;
   }
@@ -247,17 +249,18 @@ class ViewController extends GetxController {
       return;
     }
 
-    // Update in memory
+    // update in memory
     home.userSettings['selection'] = selected.map((e) => e.toJson()).toList();
     home.userSettings['home'] = viewLocation;
 
-    // Persist to settings.json
+    // persist to settings.json
     await stream.updateJsonKey(stream.settingsFilePath, home.userSettings, 'home', viewLocation);
     await stream.updateJsonKey(stream.settingsFilePath, home.userSettings, 'selection', selected.map((e) => e.toJson()).toList());
 
-    // Create typed snapshot
-    final timestampKey = '${home.generateTimestamp()}_game_snapshot';
-    home.createSnapshot(timestampKey, viewLocation, selected);
+    // TODO > drop the title operation here
+    // create typed snapshot
+    // final timestampKey = '${home.generateTimestamp()}_game_snapshot';
+    home.createSnapshot(viewLocation, selected);
 
     home.showDialog('Target', 'Saved ${selected.length} items');
   }
@@ -277,10 +280,8 @@ class StreamController extends GetxController {
     final folderPath = _localAppData();
     home.userSettings['settings'] = folderPath;
 
-    // load settings
+    // load data
     await validateJsonFile(settingsFilePath, home.userSettings);
-
-    // load snapshots
     await validateJsonFile(snapshotsFilePath, home.snapshots);
 
     // auto-save snapshots
@@ -319,7 +320,7 @@ class StreamController extends GetxController {
           try {
             target[key] = Snapshot.fromJson(value);
           } catch (e) {
-            print('Failed to parse snapshot $key: $e');
+            home.showDialog('Error', 'Failed to parse snapshot $key: $e');
           }
         });
       } else if (target is RxMap && parsed is Map<String, dynamic>) {
@@ -329,11 +330,11 @@ class StreamController extends GetxController {
         throw const FormatException('Invalid JSON file format.');
       }
     } catch (e) {
-      print('Exception caught during validation of $filePath: $e');
+      home.showDialog('Error', 'Exception caught during validation of $filePath: $e');
       if (!await file.exists() || (await file.readAsString()).trim().isEmpty) {
         await createJsonFile(filePath, target);
       } else {
-        print('Failed to parse existing file, using it as is.');
+        home.showDialog('Error', 'Failed to parse existing file, using it as is.');
       }
     }
   }
