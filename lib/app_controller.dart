@@ -31,23 +31,10 @@ class HomeController extends GetxController {
 
   RxMap<String, Snapshot> snapshots = <String, Snapshot>{}.obs;
 
-  void createSnapshot(
-    String title,
-    String homePath,
-    List<FileObject> selectedItems, {
-    String? customName,
-    String? customStorage,
-  }) {
+  void createSnapshot(String title, String homePath, List<FileObject> selectedItems, {String? customName, String? customStorage}) {
     final id = generateTimestamp();
 
-    final snapshot = Snapshot(
-      id: id,
-      title: title,
-      name: customName,
-      storage: customStorage,
-      home: homePath,
-      items: selectedItems,
-    );
+    final snapshot = Snapshot(id: id, title: title, name: customName, storage: customStorage, home: homePath, items: selectedItems);
 
     snapshots[id] = snapshot;
   }
@@ -326,10 +313,7 @@ class StreamController extends GetxController {
 
       final parsed = jsonDecode(contents);
 
-      if (target is RxMap && parsed is Map<String, dynamic>) {
-        target.clear();
-        target.addAll(parsed);
-      } else if (target is RxMap<String, Snapshot> && parsed is Map<String, dynamic>) {
+      if (target is RxMap<String, Snapshot> && parsed is Map<String, dynamic>) {
         target.clear();
         parsed.forEach((key, value) {
           try {
@@ -338,6 +322,9 @@ class StreamController extends GetxController {
             print('Failed to parse snapshot $key: $e');
           }
         });
+      } else if (target is RxMap && parsed is Map<String, dynamic>) {
+        target.clear();
+        target.addAll(parsed);
       } else {
         throw const FormatException('Invalid JSON file format.');
       }
