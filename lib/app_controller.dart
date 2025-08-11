@@ -260,14 +260,16 @@ class ViewController extends GetxController {
       return;
     }
 
+    // Update in memory
     home.userSettings['selection'] = selected.map((e) => e.toJson()).toList();
-    final timestampKey = '${home.generateTimestamp()}_game_snapshot';
-
     home.userSettings['home'] = viewLocation;
-    await stream.updateSettings(stream.settingsFilePath, 'home', viewLocation);
-    await stream.updateSettings(stream.settingsFilePath, 'selection', selected.map((e) => e.toJson()).toList());
 
-    // typed snapshot
+    // Persist to settings.json
+    await stream.updateJsonKey(stream.settingsFilePath, home.userSettings, 'home', viewLocation);
+    await stream.updateJsonKey(stream.settingsFilePath, home.userSettings, 'selection', selected.map((e) => e.toJson()).toList());
+
+    // Create typed snapshot
+    final timestampKey = '${home.generateTimestamp()}_game_snapshot';
     home.createSnapshot(timestampKey, viewLocation, selected);
 
     home.showDialog('Target', 'Saved ${selected.length} items');
@@ -276,15 +278,10 @@ class ViewController extends GetxController {
 
 class StreamController extends GetxController {
   final home = Get.find<HomeController>();
-  
-  // define file paths
-  String get settingsFilePath {
-    return '${home.userSettings['settings']}${Platform.pathSeparator}settings.json';
-  }
 
-  String get snapshotsFilePath {
-    return '${home.userSettings['settings']}${Platform.pathSeparator}snapshots.json';
-  }
+  // define file paths
+  String get settingsFilePath => '${home.userSettings['settings']}${Platform.pathSeparator}settings.json';
+  String get snapshotsFilePath => '${home.userSettings['settings']}${Platform.pathSeparator}snapshots.json';
 
   @override
   void onReady() async {
@@ -299,9 +296,8 @@ class StreamController extends GetxController {
     // load snapshots
     await validateJsonFile(snapshotsFilePath, home.snapshots);
 
-    ever(home.snapshots, (snapshots) {
-      saveSnapshots();
-    });
+    // auto-save snapshots
+    ever(home.snapshots, (_) => saveSnapshots());
   }
 
   Future<void> saveSnapshots() async {
@@ -314,7 +310,6 @@ class StreamController extends GetxController {
     return '$appDataPath${Platform.pathSeparator}$appFolder';
   }
 
-  // TODO > trace back default data
   Future<void> validateJsonFile(String filePath, dynamic target) async {
     final file = File(filePath);
     try {
@@ -341,7 +336,6 @@ class StreamController extends GetxController {
             target[key] = Snapshot.fromJson(value);
           } catch (e) {
             print('Failed to parse snapshot $key: $e');
-            // Don't rethrow the exception here, let the target remain partially populated
           }
         });
       } else {
@@ -349,12 +343,9 @@ class StreamController extends GetxController {
       }
     } catch (e) {
       print('Exception caught during validation of $filePath: $e');
-      // Only create a new file if it's not possible to parse the existing one
       if (!await file.exists() || (await file.readAsString()).trim().isEmpty) {
         await createJsonFile(filePath, target);
       } else {
-        // If the file exists and has content, but parsing failed,
-        // you might want to handle this case differently, e.g., by logging the error or notifying the user
         print('Failed to parse existing file, using it as is.');
       }
     }
@@ -372,15 +363,10 @@ class StreamController extends GetxController {
 
       dynamic serializable = data;
       if (data is RxMap<String, Snapshot>) {
-        serializable = {
-          for (var entry in data.entries) entry.key: entry.value.toJson()
-        };
+        serializable = {for (var entry in data.entries) entry.key: entry.value.toJson()};
       }
 
-      await tempFile.writeAsString(
-        JsonEncoder.withIndent('  ').convert(serializable),
-        mode: FileMode.write,
-      );
+      await tempFile.writeAsString(JsonEncoder.withIndent('  ').convert(serializable), mode: FileMode.write);
       await tempFile.rename(filePath);
     } catch (e) {
       home.showDialog('Write Error', 'failed to write file: $e');
@@ -403,72 +389,8 @@ class StreamController extends GetxController {
     targetMap.remove(key);
     await createJsonFile(filePath, targetMap);
   }
-
-  // legacy
-  Future<void> validateSettings(String filePath) async {
-    final file = File(filePath);
-
-    try {
-      if (!await file.exists()) {
-        await createSettings(filePath);
-        return;
-      }
-
-      final contents = await file.readAsString();
-
-      if (contents.trim().isEmpty) {
-        await createSettings(filePath);
-        return;
-      }
-
-      final parsed = jsonDecode(contents);
-
-      if (parsed is Map<String, dynamic>) {
-        home.userSettings.clear();
-        home.userSettings.addAll(parsed);
-      } else {
-        throw const FormatException('corrupt settings file');
-      }
-    } catch (_) {
-      await createSettings(filePath);
-    }
-  }
-
-  Future<void> createSettings(String filePath) async {
-    final file = File(filePath);
-    final tempFile = File('$filePath.tmp');
-
-    try {
-      final dir = file.parent;
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-      await tempFile.writeAsString(JsonEncoder.withIndent('  ').convert(home.userSettings), mode: FileMode.write);
-      await tempFile.rename(filePath);
-    } catch (e) {
-      home.showDialog('Write Error', 'failed to write settings: $e');
-    }
-  }
-
-  Future<dynamic> readSettings(String filePath, String key, [dynamic fallback]) async {
-    await validateSettings(filePath);
-    return home.userSettings.containsKey(key) ? home.userSettings[key] : fallback;
-  }
-
-  Future<void> updateSettings(String filePath, String key, dynamic value) async {
-    await validateSettings(filePath);
-    home.userSettings[key] = value;
-    await createSettings(filePath);
-  }
-
-  Future<void> deleteSettings(String filePath, String key) async {
-    await validateSettings(filePath);
-    home.userSettings.remove(key);
-    await createSettings(filePath);
-  }
-
-  
 }
+
 
 class ArchiveController extends GetxController {
   final home = Get.find<HomeController>();

@@ -211,14 +211,14 @@ class ExplorerScreen extends StatelessWidget {
         await view.readLocation();
       },
       ActionType.add: () async {
-        final currentFolder = view.viewLocation;
-        await stream.updateSettings(stream.settingsFilePath, 'home', currentFolder);
         await view.saveSelectedItems();
+
         for (var item in view.viewContents) {
           item.isSelected.value = false;
         }
+
         home.userSettings['selection'] = [];
-        await stream.updateSettings(stream.settingsFilePath, 'selection', []);
+        await stream.updateJsonKey(stream.settingsFilePath, home.userSettings, 'selection', []);
       },
     };
 

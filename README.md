@@ -8,6 +8,7 @@ A toolbox for snapshot game progress and counter autosave system or save slot li
 0.3 separate explorer from user tracks<br>
 0.4 typed snapshots<br>
 0.5 archive multiple locations<br>
+0.6 persist snapshots<br>
 
 to do:
 1. user collection methods > foundations done
