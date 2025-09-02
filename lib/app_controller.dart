@@ -31,7 +31,6 @@ class HomeController extends GetxController {
 
   RxMap<String, Snapshot> snapshots = <String, Snapshot>{}.obs;
 
-  // TODO > default title can be generated here
   void createSnapshot(String homePath, List<FileObject> selectedItems, {String? title, String? customName, String? customStorage}) {
     final id = generateTimestamp();
     final snapshotTitle = title ?? '${id}_game_snapshot';
@@ -98,6 +97,12 @@ class HomeController extends GetxController {
           ],
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Get.back();
+            },
+            child: const Column(children: [SizedBox(width: 50), Text('cancel')]),
+          ),
           TextButton(
             onPressed: () {
               snapshots[originalId] = snapshot;
@@ -257,9 +262,7 @@ class ViewController extends GetxController {
     await stream.updateJsonKey(stream.settingsFilePath, home.userSettings, 'home', viewLocation);
     await stream.updateJsonKey(stream.settingsFilePath, home.userSettings, 'selection', selected.map((e) => e.toJson()).toList());
 
-    // TODO > drop the title operation here
     // create typed snapshot
-    // final timestampKey = '${home.generateTimestamp()}_game_snapshot';
     home.createSnapshot(viewLocation, selected);
 
     home.showDialog('Target', 'Saved ${selected.length} items');

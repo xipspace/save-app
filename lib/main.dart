@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'app_controller.dart';
 import 'app_model.dart';
 
-enum ActionType { home, refresh, add, restore }
+enum ActionType { home, refresh, add }
 
 void main() => runApp(const MainApp());
 
@@ -100,8 +100,8 @@ class HomeScreen extends StatelessWidget {
                                                   },
                                                 ),
                                               ),
-                                              // TODO > read storage and identify any container and target last as default
-                                              // read container contents
+                                              // TODO > read storage at home and identify any container and target last as default
+                                              // toggle to last or selected
                                               Tooltip(
                                                 message: 'restore',
                                                 child: IconButton(
@@ -399,6 +399,7 @@ class UserScreen extends StatelessWidget {
               // height: Get.height * 0.95,
               const SizedBox(height: 20),
 
+              Obx(() => Text(home.userSettings['home'].toString())),
               Obx(() => Text(home.userSettings['selection'].toString())),
 
               const SizedBox(height: 20),
