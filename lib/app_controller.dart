@@ -387,6 +387,14 @@ class ArchiveController extends GetxController {
   final home = Get.find<HomeController>();
   final view = Get.find<ViewController>();
 
+  // list all .zip containers in a folder
+  Future<List<File>> listContainers(String folderPath) async {
+    final dir = Directory(folderPath);
+    if (!await dir.exists()) return [];
+    return dir.listSync().whereType<File>().where((f) => f.path.toLowerCase().endsWith('.zip')).toList()
+      ..sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+  }
+
   Future<void> compressTarget(Snapshot snapshot) async {
     final List targets = snapshot.items.map((e) => e.toJson()).toList();
     final String storagePath = snapshot.storage;
@@ -457,7 +465,94 @@ class ArchiveController extends GetxController {
     }
   }
 
-  Future<void> extractTarget() async {
-    // TODO > needs to able to overwrite all files from target
+  // extract target container or fallback to latest from storage
+  Future<void> extractTarget(Snapshot snapshot, {File? container}) async {
+    try {
+      // decide which container to extract
+      File? targetZip = container;
+
+      if (targetZip == null) {
+        // fallback: load from snapshot.storage
+        if (snapshot.storage.isEmpty) {
+          home.showDialog('Error', 'No storage path defined in snapshot.');
+          return;
+        }
+
+        final containers = await listContainers(snapshot.storage);
+        if (containers.isEmpty) {
+          home.showDialog('Error', 'No container found in:\n${snapshot.storage}');
+          return;
+        }
+
+        targetZip = containers.first; // pick latest
+      }
+
+      final zipName = targetZip.path.split(Platform.pathSeparator).last;
+
+      // ask for confirmation before restoring
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Confirm Restore'),
+          content: Text(
+            'Do you want to extract:\n$zipName\n\n'
+            'From: ${snapshot.storage}\n'
+            'Into: ${snapshot.home}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(), // cancel
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Get.back(); // close dialog before extraction
+
+                try {
+                  final bytes = await targetZip!.readAsBytes();
+                  final archive = ZipDecoder().decodeBytes(bytes);
+
+                  int fileCount = 0;
+                  int folderCount = 0;
+                  int totalBytes = 0;
+
+                  // extract each file/folder into snapshot.home
+                  for (final file in archive) {
+                    final outPath = '${snapshot.home}${Platform.pathSeparator}${file.name}';
+
+                    if (file.isFile) {
+                      final outFile = File(outPath);
+                      await outFile.parent.create(recursive: true);
+                      await outFile.writeAsBytes(file.content as List<int>);
+                      fileCount++;
+                      totalBytes += file.size;
+                    } else {
+                      await Directory(outPath).create(recursive: true);
+                      folderCount++;
+                    }
+                  }
+
+                  // show summary after extraction
+                  home.showDialog(
+                    'Extraction Complete',
+                    'Extracted: $zipName\n'
+                        'Files: $fileCount\n'
+                        'Folders: $folderCount\n'
+                        'Total Size: ${totalBytes ~/ 1024} KB',
+                  );
+                } catch (e) {
+                  home.showDialog('Error', 'Extraction failed: $e');
+                }
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      home.showDialog('Error', 'Extraction failed: $e');
+    }
   }
+
+  
+
 }

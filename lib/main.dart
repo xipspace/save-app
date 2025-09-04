@@ -109,7 +109,9 @@ class HomeScreen extends StatelessWidget {
                                                   icon: const Icon(Icons.replay),
                                                   onPressed: () {
                                                     // and pass the home of the targets to reverse
-                                                    // archive.extractTarget();
+                                                    // home.setMsg('restored ${snapshot.title}');
+                                                    home.setStamp();
+                                                    archive.extractTarget(snapshot);
                                                   },
                                                 ),
                                               ),
