@@ -447,7 +447,9 @@ class ArchiveController extends GetxController {
         }
       }
 
-      final zipName = '${snapshot.id}_${snapshot.name}.zip';
+      // file name to use a timestamp otherwise it will overwrite
+      // final zipName = '${snapshot.id}_${snapshot.name}.zip';
+      final zipName = '${home.generateTimestamp()}_${snapshot.name}.zip';
       final zipPath = '$storagePath${Platform.pathSeparator}$zipName';
 
       final zipBytes = ZipEncoder().encode(archive);
@@ -553,6 +555,6 @@ class ArchiveController extends GetxController {
     }
   }
 
-  
+  //
 
 }

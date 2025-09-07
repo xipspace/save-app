@@ -100,16 +100,14 @@ class HomeScreen extends StatelessWidget {
                                                   },
                                                 ),
                                               ),
-                                              // TODO > read storage at home and identify any container and target last as default
-                                              // toggle to last or selected
+                                              // TODO > toggle to last or selected
                                               Tooltip(
                                                 message: 'restore',
                                                 child: IconButton(
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.replay),
                                                   onPressed: () {
-                                                    // and pass the home of the targets to reverse
-                                                    // home.setMsg('restored ${snapshot.title}');
+                                                    home.setMsg('restored ${snapshot.title}');
                                                     home.setStamp();
                                                     archive.extractTarget(snapshot);
                                                   },
@@ -176,9 +174,8 @@ class HomeScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
-          // abstract logic to handle initialization using home
           // find place to expand both new additions (without a home) and edit snapshot items when going to explorer
-          // TODO > clear view for a new addition and read selected target to draw view properly for edition
+          // TODO ? clear view for a new addition and read selected target to draw view properly for edition
           view.initView();
           Get.to(() => ExplorerScreen());
         },
