@@ -57,9 +57,9 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // be able to edit targets of a current snapshot
-                // revert from a specific archive or the last one
-                // save and restore triggered by global HK and interval
+                // TODO > be able to edit targets of a current snapshot
+                // TODO > save and restore triggered by global HK and interval
+                // TODO > reorder view
                 Obx(() {
                   final entries = home.snapshots.entries.toList();
 
@@ -370,7 +370,7 @@ class UserScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final MediaQueryData media = MediaQuery.of(context);
+    final media = MediaQuery.of(context);
     final home = Get.find<HomeController>();
 
     return Scaffold(
@@ -397,16 +397,20 @@ class UserScreen extends StatelessWidget {
               // width: Get.width * 0.95,
               // height: Get.height * 0.95,
               const SizedBox(height: 20),
+              const Text('user statistics'),
+              const SizedBox(height: 20),
 
-              Obx(() => Text(home.userSettings['home'].toString())),
-              Obx(() => Text(home.userSettings['selection'].toString())),
+              Obx(() => Text('tracked objects: ${home.snapshots.length.toString()}')),
+              Obx(() => Text('current folder: ${home.userSettings['home'].toString()}')),
+              Obx(() => Text('current selection: ${home.userSettings['selection'].toString()}')),
+              
 
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(child: const Icon(Icons.add), onPressed: () => home.setStamp()),
+      // floatingActionButton: FloatingActionButton(child: const Icon(Icons.add), onPressed: () => home.setStamp()),
     );
   }
 }

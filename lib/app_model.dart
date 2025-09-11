@@ -80,7 +80,7 @@ class Snapshot {
   List<FileObject> items;
 
   Snapshot({required this.id, required this.title, String? name, String? storage, required this.home, required this.items})
-    : name = name ?? 'game_snapshot',
+    : name = name ?? 'snapshot',
       storage = storage ?? home;
 
   Map<String, dynamic> toJson() => {

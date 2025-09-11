@@ -33,7 +33,7 @@ class HomeController extends GetxController {
 
   void createSnapshot(String homePath, List<FileObject> selectedItems, {String? title, String? customName, String? customStorage}) {
     final id = generateTimestamp();
-    final snapshotTitle = title ?? '${id}_game_snapshot';
+    final snapshotTitle = title ?? '${id}_snapshot';
 
     final snapshot = Snapshot(id: id, title: snapshotTitle, name: customName, storage: customStorage, home: homePath, items: selectedItems);
 
@@ -554,7 +554,5 @@ class ArchiveController extends GetxController {
       home.showDialog('Error', 'Extraction failed: $e');
     }
   }
-
-  //
 
 }
