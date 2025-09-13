@@ -57,9 +57,9 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // TODO > be able to edit targets of a current snapshot
-                // TODO > save and restore triggered by global HK and interval
                 // TODO > reorder view
+                // TODO > save and restore triggered by global HK and interval
+                // TODO > be able to edit targets of a current snapshot
                 Obx(() {
                   final entries = home.snapshots.entries.toList();
 
@@ -194,6 +194,7 @@ class ExplorerScreen extends StatelessWidget {
     final stream = Get.find<StreamController>();
     // final archive = Get.find<ArchiveController>();
 
+    // map buttons from enum
     final Map<ActionType, VoidCallback> actionMap = {
       ActionType.home: () async {
         // go to home
@@ -270,6 +271,7 @@ class ExplorerScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
+              // drive selector
               Obx(() {
                 final disks = view.availableDisks;
 

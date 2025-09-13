@@ -447,8 +447,6 @@ class ArchiveController extends GetxController {
         }
       }
 
-      // file name to use a timestamp otherwise it will overwrite
-      // final zipName = '${snapshot.id}_${snapshot.name}.zip';
       final zipName = '${home.generateTimestamp()}_${snapshot.name}.zip';
       final zipPath = '$storagePath${Platform.pathSeparator}$zipName';
 
@@ -486,7 +484,8 @@ class ArchiveController extends GetxController {
           return;
         }
 
-        targetZip = containers.first; // pick latest
+        // pick latest
+        targetZip = containers.first;
       }
 
       final zipName = targetZip.path.split(Platform.pathSeparator).last;
@@ -502,12 +501,13 @@ class ArchiveController extends GetxController {
           ),
           actions: [
             TextButton(
-              onPressed: () => Get.back(), // cancel
+              onPressed: () => Get.back(),
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
-                Get.back(); // close dialog before extraction
+                // close dialog before extraction
+                Get.back();
 
                 try {
                   final bytes = await targetZip!.readAsBytes();
@@ -533,7 +533,6 @@ class ArchiveController extends GetxController {
                     }
                   }
 
-                  // show summary after extraction
                   home.showDialog(
                     'Extraction Complete',
                     'Extracted: $zipName\n'
