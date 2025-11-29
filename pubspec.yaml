@@ -1,7 +1,7 @@
 name: save_point_app
 description: 'A toolbox for snapshot game progress and counter autosave system and save slot limits.'
 publish_to: 'none'
-version: 0.6.0
+version: 0.8.0
 
 environment:
   sdk: ^3.8.1

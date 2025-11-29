@@ -107,7 +107,7 @@ class HomeScreen extends StatelessWidget {
                                                   iconSize: 18,
                                                   icon: const Icon(Icons.replay),
                                                   onPressed: () {
-                                                    home.setMsg('restored ${snapshot.title}');
+                                                    // home.setMsg('restored ${snapshot.title}');
                                                     home.setStamp();
                                                     archive.extractTarget(snapshot);
                                                   },
@@ -148,8 +148,8 @@ class HomeScreen extends StatelessWidget {
                                     children: [
                                       Text('id: $snapshotId'),
                                       Text('filename: ${snapshot.name}'),
-                                      Text('storage: ${snapshot.storage}'),
                                       Text('home: ${snapshot.home}'),
+                                      Text('storage: ${snapshot.storage}'),
                                       Text('items: ${snapshot.items.length}'),
 
                                       const SizedBox(height: 5),

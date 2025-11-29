@@ -17,6 +17,7 @@ class AppBindings implements Bindings {
   }
 }
 
+// TODO > change storage
 class HomeController extends GetxController {
 
   RxString msg = 'welcome'.obs;
@@ -124,10 +125,10 @@ class ViewController extends GetxController {
 
   
   String viewLocation = '';
-  RxString currentDisk = ''.obs;
   RxList<FileObject> viewContents = <FileObject>[].obs;
   final String defaultLocation = Directory.current.path;
 
+  RxString currentDisk = ''.obs;
   RxList<String> availableDisks = <String>[].obs;
 
   Future<void> initView() async {
@@ -553,5 +554,4 @@ class ArchiveController extends GetxController {
       home.showDialog('Error', 'Extraction failed: $e');
     }
   }
-
 }
