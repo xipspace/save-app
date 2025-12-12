@@ -17,7 +17,7 @@ class AppBindings implements Bindings {
   }
 }
 
-// TODO > change storage
+// TODO > edit / use single location for storage
 class HomeController extends GetxController {
 
   RxString msg = 'welcome'.obs;

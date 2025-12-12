@@ -71,6 +71,7 @@ class FolderItem extends FileObject {
   };
 }
 
+// TODO > track last time saved
 class Snapshot {
   final String id;
   String title;

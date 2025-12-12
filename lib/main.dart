@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import 'app_controller.dart';
@@ -62,6 +63,7 @@ class HomeScreen extends StatelessWidget {
                 // TODO > be able to edit targets of a current snapshot
                 Obx(() {
                   final entries = home.snapshots.entries.toList();
+                  const double iconSize = 18.0;
 
                   return entries.isEmpty
                       ? const Text('No snapshots available. Add one.')
@@ -91,7 +93,7 @@ class HomeScreen extends StatelessWidget {
                                               Tooltip(
                                                 message: 'compress',
                                                 child: IconButton(
-                                                  iconSize: 18,
+                                                  iconSize: iconSize,
                                                   icon: const Icon(Icons.add),
                                                   onPressed: () async {
                                                     home.setMsg('saved ${snapshot.title}');
@@ -104,7 +106,7 @@ class HomeScreen extends StatelessWidget {
                                               Tooltip(
                                                 message: 'restore',
                                                 child: IconButton(
-                                                  iconSize: 18,
+                                                  iconSize: iconSize,
                                                   icon: const Icon(Icons.replay),
                                                   onPressed: () {
                                                     // home.setMsg('restored ${snapshot.title}');
@@ -116,15 +118,37 @@ class HomeScreen extends StatelessWidget {
                                               Tooltip(
                                                 message: 'edit',
                                                 child: IconButton(
-                                                  iconSize: 18,
+                                                  iconSize: iconSize,
                                                   icon: const Icon(Icons.edit_note),
                                                   onPressed: () => home.showEdit(snapshot),
                                                 ),
                                               ),
                                               Tooltip(
+                                                message: 'home',
+                                                child: IconButton(
+                                                  iconSize: iconSize,
+                                                  icon: const Icon(Icons.home_outlined),
+                                                  onPressed: () {
+                                                    home.setStamp();
+                                                    Clipboard.setData(ClipboardData(text: snapshot.home));
+                                                  },
+                                                ),
+                                              ),
+                                              Tooltip(
+                                                message: 'storage',
+                                                child: IconButton(
+                                                  iconSize: iconSize,
+                                                  icon: const Icon(Icons.folder_outlined),
+                                                  onPressed: () {
+                                                    home.setStamp();
+                                                    Clipboard.setData(ClipboardData(text: snapshot.storage));
+                                                  },
+                                                ),
+                                              ),
+                                              Tooltip(
                                                 message: 'delete',
                                                 child: IconButton(
-                                                  iconSize: 18,
+                                                  iconSize: iconSize,
                                                   icon: const Icon(Icons.close),
                                                   onPressed: () {
                                                     home.setStamp();
@@ -146,6 +170,7 @@ class HomeScreen extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      // TODO > if you cant open local send to clipboard
                                       Text('id: $snapshotId'),
                                       Text('filename: ${snapshot.name}'),
                                       Text('home: ${snapshot.home}'),
@@ -184,6 +209,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// TODO > rethink item picker
 class ExplorerScreen extends StatelessWidget {
   const ExplorerScreen({super.key});
 
