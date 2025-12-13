@@ -17,7 +17,8 @@ class AppBindings implements Bindings {
   }
 }
 
-// TODO > edit / use single location for storage
+// TODO > edit location for storage
+// TODO > use a default storage
 class HomeController extends GetxController {
 
   RxString msg = 'welcome'.obs;
@@ -25,7 +26,6 @@ class HomeController extends GetxController {
 
   RxMap<String, dynamic> userSettings = <String, dynamic>{
     'settings': '', // settings.json location
-    // home is now dependant of snapshot
     'home': '', // init location
     'selection': {}, // collection of objects to operate
   }.obs;
@@ -461,6 +461,7 @@ class ArchiveController extends GetxController {
             'Folders: $folderCount\n'
             'Total Size: ${totalBytes ~/ 1024} KB',
       );
+      // home.setMsg('snapshot saved: $zipName');
     } catch (e) {
       home.showDialog('Error', 'Compression failed: $e');
     }
@@ -491,7 +492,6 @@ class ArchiveController extends GetxController {
 
       final zipName = targetZip.path.split(Platform.pathSeparator).last;
 
-      // TODO > avoid the double dialog
       Get.dialog(
         AlertDialog(
           title: const Text('Confirm Restore'),

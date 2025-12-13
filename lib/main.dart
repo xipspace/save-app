@@ -9,18 +9,14 @@ import 'app_model.dart';
 enum ExplorerAction { home, refresh, add }
 
 enum ItemAction {
-  compress,
-  restore,
-  edit,
-  home,
-  storage,
-  delete;
+  
+  compress, restore, edit, home, storage, delete;
 
   IconData get icon => const {
     ItemAction.compress: Icons.add,
     ItemAction.restore: Icons.replay,
     ItemAction.edit: Icons.edit_note,
-    ItemAction.home: Icons.home_outlined,
+    ItemAction.home: Icons.home,
     ItemAction.storage: Icons.folder_outlined,
     ItemAction.delete: Icons.close,
   }[this]!;
@@ -33,6 +29,7 @@ enum ItemAction {
     ItemAction.storage: 'storage',
     ItemAction.delete: 'delete',
   }[this]!;
+  
 }
 
 void main() => runApp(const MainApp());
@@ -87,8 +84,8 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // TODO > reorder view
-                // TODO > save and restore triggered by global HK and interval
                 // TODO > be able to edit targets of a current snapshot
+                // TODO > save and restore triggered by global HK and interval
                 Obx(() {
                   final entries = home.snapshots.entries.toList();
                   const double iconSize = 18.0;
@@ -127,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                                                     home.setStamp();
                                                     switch (action) {
                                                       case ItemAction.compress:
-                                                        home.setMsg('saved ${snapshot.title}');
+                                                        // home.setMsg('saved ${snapshot.title}');
                                                         archive.compressTarget(snapshot);
                                                         break;
                                                       case ItemAction.restore:
@@ -164,7 +161,6 @@ class HomeScreen extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // TODO > if you cant open local send to clipboard
                                       Text('id: $snapshotId'),
                                       Text('filename: ${snapshot.name}'),
                                       Text('home: ${snapshot.home}'),
