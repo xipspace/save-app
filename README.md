@@ -1,7 +1,7 @@
 # Save Point Toolbox
 
 
-A toolbox for snapshot game progress and counter autosave systems and save slot limits.
+A toolbox for snapshot game progress to counter autosave systems and save slot limits.
 
 to do:
 1. [WIP] ui operations

@@ -491,7 +491,7 @@ class ArchiveController extends GetxController {
 
       final zipName = targetZip.path.split(Platform.pathSeparator).last;
 
-      // ask for confirmation before restoring
+      // TODO > avoid the double dialog
       Get.dialog(
         AlertDialog(
           title: const Text('Confirm Restore'),
