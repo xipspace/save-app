@@ -5,7 +5,35 @@ import 'package:get/get.dart';
 import 'app_controller.dart';
 import 'app_model.dart';
 
-enum ActionType { home, refresh, add }
+// enum ItemAction { compress, restore, edit, home, storage, delete }
+enum ExplorerAction { home, refresh, add }
+
+enum ItemAction {
+  compress,
+  restore,
+  edit,
+  home,
+  storage,
+  delete;
+
+  IconData get icon => const {
+    ItemAction.compress: Icons.add,
+    ItemAction.restore: Icons.replay,
+    ItemAction.edit: Icons.edit_note,
+    ItemAction.home: Icons.home_outlined,
+    ItemAction.storage: Icons.folder_outlined,
+    ItemAction.delete: Icons.close,
+  }[this]!;
+
+  String get tooltip => const {
+    ItemAction.compress: 'compress',
+    ItemAction.restore: 'restore',
+    ItemAction.edit: 'edit',
+    ItemAction.home: 'home',
+    ItemAction.storage: 'storage',
+    ItemAction.delete: 'delete',
+  }[this]!;
+}
 
 void main() => runApp(const MainApp());
 
@@ -89,75 +117,41 @@ class HomeScreen extends StatelessWidget {
                                           Text(snapshot.title),
                                           const Spacer(),
                                           Row(
-                                            children: [
-                                              Tooltip(
-                                                message: 'compress',
+                                            children: ItemAction.values.map((action) {
+                                              return Tooltip(
+                                                message: action.tooltip,
                                                 child: IconButton(
                                                   iconSize: iconSize,
-                                                  icon: const Icon(Icons.add),
-                                                  onPressed: () async {
-                                                    home.setMsg('saved ${snapshot.title}');
-                                                    home.setStamp();
-                                                    await archive.compressTarget(snapshot);
-                                                  },
-                                                ),
-                                              ),
-                                              // TODO > toggle to last or selected
-                                              Tooltip(
-                                                message: 'restore',
-                                                child: IconButton(
-                                                  iconSize: iconSize,
-                                                  icon: const Icon(Icons.replay),
-                                                  onPressed: () {
-                                                    // home.setMsg('restored ${snapshot.title}');
-                                                    home.setStamp();
-                                                    archive.extractTarget(snapshot);
-                                                  },
-                                                ),
-                                              ),
-                                              Tooltip(
-                                                message: 'edit',
-                                                child: IconButton(
-                                                  iconSize: iconSize,
-                                                  icon: const Icon(Icons.edit_note),
-                                                  onPressed: () => home.showEdit(snapshot),
-                                                ),
-                                              ),
-                                              Tooltip(
-                                                message: 'home',
-                                                child: IconButton(
-                                                  iconSize: iconSize,
-                                                  icon: const Icon(Icons.home_outlined),
+                                                  icon: Icon(action.icon),
                                                   onPressed: () {
                                                     home.setStamp();
-                                                    Clipboard.setData(ClipboardData(text: snapshot.home));
+                                                    switch (action) {
+                                                      case ItemAction.compress:
+                                                        home.setMsg('saved ${snapshot.title}');
+                                                        archive.compressTarget(snapshot);
+                                                        break;
+                                                      case ItemAction.restore:
+                                                        // home.setMsg('restored ${snapshot.title}');
+                                                        archive.extractTarget(snapshot);
+                                                        break;
+                                                      case ItemAction.edit:
+                                                        home.showEdit(snapshot);
+                                                        break;
+                                                      case ItemAction.home:
+                                                        Clipboard.setData(ClipboardData(text: snapshot.home));
+                                                        break;
+                                                      case ItemAction.storage:
+                                                        Clipboard.setData(ClipboardData(text: snapshot.storage));
+                                                        break;
+                                                      case ItemAction.delete:
+                                                        home.setMsg('deleted ${snapshot.title}');
+                                                        home.snapshots.remove(snapshotId);
+                                                        break;
+                                                    }
                                                   },
                                                 ),
-                                              ),
-                                              Tooltip(
-                                                message: 'storage',
-                                                child: IconButton(
-                                                  iconSize: iconSize,
-                                                  icon: const Icon(Icons.folder_outlined),
-                                                  onPressed: () {
-                                                    home.setStamp();
-                                                    Clipboard.setData(ClipboardData(text: snapshot.storage));
-                                                  },
-                                                ),
-                                              ),
-                                              Tooltip(
-                                                message: 'delete',
-                                                child: IconButton(
-                                                  iconSize: iconSize,
-                                                  icon: const Icon(Icons.close),
-                                                  onPressed: () {
-                                                    home.setStamp();
-                                                    home.setMsg('deleted ${snapshot.title}');
-                                                    home.snapshots.remove(snapshotId);
-                                                  },
-                                                ),
-                                              )
-                                            ],
+                                              );
+                                            }).toList(),
                                           ),
                                         ],
                                       ),
@@ -221,8 +215,8 @@ class ExplorerScreen extends StatelessWidget {
     // final archive = Get.find<ArchiveController>();
 
     // map buttons from enum
-    final Map<ActionType, VoidCallback> actionMap = {
-      ActionType.home: () async {
+    final Map<ExplorerAction, VoidCallback> actionMap = {
+      ExplorerAction.home: () async {
         // go to home
         final savedHome = home.userSettings['home'];
         if (savedHome is String && savedHome.isNotEmpty) {
@@ -233,10 +227,10 @@ class ExplorerScreen extends StatelessWidget {
           home.showDialog('Home Error', 'No valid home path set.');
         }
       },
-      ActionType.refresh: () async {
+      ExplorerAction.refresh: () async {
         await view.readLocation();
       },
-      ActionType.add: () async {
+      ExplorerAction.add: () async {
         await view.saveSelectedItems();
 
         for (var item in view.viewContents) {
@@ -267,7 +261,7 @@ class ExplorerScreen extends StatelessWidget {
                 child: Wrap(
                   // spacing: 5,
                   // runSpacing: 5,
-                  children: ActionType.values.map((action) {
+                  children: ExplorerAction.values.map((action) {
                     final label = action.name.capitalizeFirst ?? action.name;
                     return SizedBox(
                       width: 100,
