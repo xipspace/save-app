@@ -461,7 +461,8 @@ class ArchiveController extends GetxController {
             'Folders: $folderCount\n'
             'Total Size: ${totalBytes ~/ 1024} KB',
       );
-      // home.setMsg('snapshot saved: $zipName');
+      
+      home.setMsg('saved $zipName');
     } catch (e) {
       home.showDialog('Error', 'Compression failed: $e');
     }
@@ -534,6 +535,8 @@ class ArchiveController extends GetxController {
                     }
                   }
 
+                  // here the toast
+                  /*
                   home.showDialog(
                     'Extraction Complete',
                     'Extracted: $zipName\n'
@@ -541,6 +544,21 @@ class ArchiveController extends GetxController {
                         'Folders: $folderCount\n'
                         'Total Size: ${totalBytes ~/ 1024} KB',
                   );
+                  */
+                  Get.snackbar(
+                    'Extraction Complete',
+                    'Extracted: $zipName\n'
+                        'Files: $fileCount\n'
+                        'Folders: $folderCount\n'
+                        'Total Size: ${totalBytes ~/ 1024} KB',
+                    backgroundColor: Colors.grey.shade300,
+                    snackPosition: SnackPosition.TOP,
+                    duration: Duration(seconds: 3),
+                    borderRadius: 10,
+                    margin: EdgeInsets.all(10),
+                  );
+
+                  home.setMsg('restored ${snapshot.title}');
                 } catch (e) {
                   home.showDialog('Error', 'Extraction failed: $e');
                 }
