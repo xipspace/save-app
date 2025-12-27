@@ -10,19 +10,19 @@ enum ExplorerAction { home, refresh, add }
 
 enum ItemAction {
   
-  compress, restore, edit, home, storage, delete;
+  snapshot, restore, edit, home, storage, delete;
 
   IconData get icon => const {
-    ItemAction.compress: Icons.add,
+    ItemAction.snapshot: Icons.add,
     ItemAction.restore: Icons.replay,
     ItemAction.edit: Icons.edit_note,
-    ItemAction.home: Icons.home,
+    ItemAction.home: Icons.home_outlined,
     ItemAction.storage: Icons.folder_outlined,
     ItemAction.delete: Icons.close,
   }[this]!;
 
   String get tooltip => const {
-    ItemAction.compress: 'compress',
+    ItemAction.snapshot: 'snapshot',
     ItemAction.restore: 'restore',
     ItemAction.edit: 'edit',
     ItemAction.home: 'home',
@@ -123,7 +123,7 @@ class HomeScreen extends StatelessWidget {
                                                   onPressed: () {
                                                     home.setStamp();
                                                     switch (action) {
-                                                      case ItemAction.compress:
+                                                      case ItemAction.snapshot:
                                                         // home.setMsg('saved ${snapshot.title}');
                                                         archive.compressTarget(snapshot);
                                                         break;
